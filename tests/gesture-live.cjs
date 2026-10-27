@@ -13,6 +13,9 @@ async function until(check, message) {
 const root = path.join(process.env.XDG_CONFIG_HOME, 'omarchy');
 assert.ok(fs.realpathSync(root).startsWith(process.env.OMADEV_HOME + '/'), 'Configuration must be isolated to the nest');
 const config = path.join(root, 'orb.json'), original = fs.readFileSync(config, 'utf8');
+const installed = path.join(root, 'plugins', id);
+assert.ok(fs.lstatSync(installed).isSymbolicLink(), 'Start with an omadev plugin link');
+assert.equal(fs.realpathSync(installed), repo, 'The nest must be linked to this exact checkout');
 const monitors = json('hyprctl', 'monitors', '-j');
 assert.equal(monitors.length, 1, 'This virtual-pointer fixture requires one monitor');
 const monitor = monitors[0];
@@ -23,6 +26,8 @@ assert.ok(fs.existsSync(pointer), 'Run ./tests/build-pointer first');
 const move = (x, y, button = 0, end) => run(pointer, Math.round(x), Math.round(y), monitor.width, monitor.height, button, ...(end || []).map(Math.round));
 const existing = json('hyprctl', 'binds', '-j');
 const isOrb = b => (b.description || '').startsWith('Orb mouse button [orb:');
+const bindingShape = binds => binds.filter(isOrb).map(b => `${b.key}:${b.modmask}:${!!b.release}`).sort();
+const originalMouseBinds = bindingShape(existing);
 const button = [275, 276, 277, 278, 279].find(code => !existing.some(b => b.key === `mouse:${code}` && !isOrb(b)));
 assert.ok(button, 'No unused extra button is available in this nest');
 const oldPointer = json('hyprctl', 'cursorpos', '-j');
@@ -55,6 +60,7 @@ function pass(message) { report.push(message); console.log('PASS:', message); }
         await until(() => count() === 1 && !status().opened, 'Hold, move and release did not launch the fixture');
         pass('Hold, move and release launches the selected shortcut once');
         move(cx, cy, button, [cx, cy]);
+        await sleep(250);
         await until(() => !status().opened && !status().gestureActive, 'Holding the centre did not cancel');
         assert.equal(count(), 1);
         pass('Holding and releasing without a selection cancels');
@@ -70,6 +76,9 @@ function pass(message) { report.push(message); console.log('PASS:', message); }
     } finally {
         try { ipc('shell', 'hide', id); } catch {}
         fs.writeFileSync(config, original);
+        try {
+            await until(() => JSON.stringify(bindingShape(json('hyprctl', 'binds', '-j'))) === JSON.stringify(originalMouseBinds), 'Original mouse bindings were not restored');
+        } catch (error) { console.error(error); process.exitCode = 1; }
         try { move(oldPointer.x - (monitor.x || 0), oldPointer.y - (monitor.y || 0)); } catch {}
         fs.writeFileSync(path.join(work, 'results.json'), JSON.stringify({date: new Date().toISOString(), checks: report}, null, 2));
     }
