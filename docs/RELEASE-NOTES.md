@@ -1,20 +1,11 @@
-Orb v0.2.0 makes the wheel easier to set up and personalise.
+Draft for Orb v0.3.0. This branch has not been released and still needs live Omarchy acceptance.
 
-- Arrange five to eight shortcuts with a draggable wheel preview, searchable app picker and keyboard controls.
-- Choose Circle or Polygon; five shortcuts make a pentagon, while the centre stays circular.
-- Open Files into its own wheel of Home, Recent, Starred, Downloads and other standard folders.
-- Create custom commands and submenus, and change the opening shortcut and desktop right-click in Settings.
-- Choose Small, Medium or Large, or fine-tune the size. Settings stays centred and keeps its opening frame.
-- Undo shortcut edits without losing Appearance or Opening drafts. The Settings header shows the installed version.
-- Load on the Omarchy 4.0.6 shell without its newer overlay/animation helpers; retain the app catalog when that shell omits its app-library service.
+Open Orb with an extra mouse button, then point and release to launch a shortcut.
 
-Existing layouts and custom metadata are retained. Changes remain drafts until Save; Cancel leaves the saved configuration alone.
+- Tap the button to keep the wheel open, or hold, move and release in one motion.
+- Release in the centre or outside the wheel to cancel. Submenus stay open for a second selection.
+- Enable and configure the button in Opening. Orb checks for conflicts and keeps normal left, right and middle clicks available.
 
-Install or update through Omarchy:
+Thanks to Michal Mazurek for the original extra-button contribution.
 
-```bash
-omarchy plugin add https://github.com/tcballard/omarchy-plugin-orb.git --enable
-omarchy plugin update io.github.tcballard.orb
-```
-
-These commands track `main`. This feature branch is a release candidate until merged and released. See [the acceptance record](ACCEPTANCE.json) for the exact tested source, packages and limits. Physical multi-monitor, hotplug, fractional scaling and the complete historical 4.0.6 OS package set remain unverified.
+The existing keyboard, desktop right-click and click-to-select controls remain. The configured extra button is consumed by Orb across applications while enabled.

@@ -29,11 +29,11 @@ function shortcut(value) {
 function mouseButton(value) {
     if (value === undefined || value === null) return { value: 277, error: "" };
     if (typeof value === "string") {
-        if (!/^27[2-9]$/.test(value)) return { error: "Use a mouse code from 272 to 279.", value: 277 };
-        return { value: Number(value), error: "" };
+        if (!/^\d{3}$/.test(value)) return { error: "Use an extra mouse button code from 275 to 511.", value: 277 };
+        value = Number(value);
     }
-    if (!Number.isInteger(value) || value < 272 || value > 279)
-        return { error: "Use a mouse code from 272 to 279.", value: 277 };
+    if (!Number.isInteger(value) || value < 275 || value > 511)
+        return { error: "Use an extra mouse button code from 275 to 511.", value: 277 };
     return { value: value, error: "" };
 }
 function bindingSignature(document) {

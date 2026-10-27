@@ -104,11 +104,10 @@ mouse_meta=false
 mouse_slot=2
 if [[ $desktop_click == true ]]; then mouse_slot=3; fi
 if [[ $mouse_open == true ]]; then
-  [[ $mouse_button =~ ^27[2-9]$ ]] || { echo 'Use a mouse code from 272 to 279.' >&2; exit 1; }
-  if [[ $desktop_click == true && $mouse_button == 273 ]]; then
-    echo 'Mouse code 273 is the desktop right-click. Turn one of them off or choose another code.' >&2
-    exit 1
-  fi
+  [[ $mouse_button =~ ^[0-9]{3}$ ]] && (( 10#$mouse_button >= 275 && 10#$mouse_button <= 511 )) || {
+    echo 'Use an extra mouse button code from 275 to 511.' >&2; exit 1;
+  }
+  mouse_button=$((10#$mouse_button))
   mouse_meta=$mouse_button
 fi
 # remove() clears every bind on one key. Ignore only the Orb bind this save replaces.
@@ -132,7 +131,7 @@ local handles = {}
 -- Bind:remove() removes every binding for the same key on current Hyprland.
 -- Reuse unchanged keys instead of staging duplicates and deleting both.
 for owner, previous in pairs(r) do
-  if type(previous) == 'table' and owner ~= 'dead' then
+  if type(previous) == 'table' and owner ~= 'dead' and owner ~= 'gesture' and owner ~= 'gestureTimer' then
     if previous.shortcut == \"$canonical\" then handles[1] = previous[1]; retained[previous[1]] = true end
 "
 if [[ $desktop_click == true ]]; then
@@ -141,6 +140,7 @@ fi
 if [[ $mouse_open == true ]]; then
   # Keep this bind in a dense slot. ipairs stops at a hole, and remove() clears every bind on that key.
   code+=$'    if previous.mouseButton == '"$mouse_button"$' then\n'
+  code+=$'      if not previous.mouseGesture then error("Restart the shell to upgrade the Orb mouse binding.") end\n'
   code+=$'      local oldMouse\n'
   code+=$'      if previous.desktopClick then oldMouse = previous[3] else oldMouse = previous[2] end\n'
   code+=$'      if oldMouse then handles['"$mouse_slot"$'] = oldMouse; retained[oldMouse] = true end\n'
@@ -161,10 +161,12 @@ if [[ $desktop_click == true ]]; then
   code+=$'\nend\nhandles[2] = assert(desktopBind())\ncreated[#created + 1] = handles[2]\nend\n'
 fi
 if [[ $mouse_open == true ]]; then
-  code+=$'\nif not handles['"$mouse_slot"$'] then\nhandles['"$mouse_slot"$'] = assert(hl.bind("mouse:'"$mouse_button"$'", function()\n  hl.exec_cmd(\'omarchy-shell shell toggle io.github.tcballard.orb\')\nend, { description = \'Orb mouse button [orb:\' .. token .. \']\' }))\ncreated[#created + 1] = handles['"$mouse_slot"$']\nend\n'
+  code+=$'\n'
+  code+=$(cat "$repo/scripts/mouse-binding.lua")
+  code+=$'\nif not handles['"$mouse_slot"$'] then\nhandles['"$mouse_slot"$'] = orbMouseBinding("mouse:'"$mouse_button"$'")\ncreated[#created + 1] = handles['"$mouse_slot"$']\nend\n'
 fi
-code+=$'\nend)\nif not ok then\n  for _, bind in ipairs(created) do pcall(function() bind:remove() end) end\n  error(failure)\nend\nfor owner, previous in pairs(r) do\n  if type(previous) == "table" and owner ~= "dead" then\n    for _, bind in ipairs(previous) do if not retained[bind] then pcall(function() bind:remove() end) end end\n    r[owner] = nil\n  end\nend\n'
-code+="handles.shortcut = \"$canonical\"; handles.desktopClick = $desktop_click; handles.mouseButton = $mouse_meta
+code+=$'\nend)\nif not ok then\n  for _, bind in ipairs(created) do pcall(function() bind:remove() end) end\n  error(failure)\nend\nfor owner, previous in pairs(r) do\n  if type(previous) == "table" and owner ~= "dead" and owner ~= "gesture" and owner ~= "gestureTimer" then\n    for _, bind in ipairs(previous) do if not retained[bind] then pcall(function() bind:remove() end) end end\n    r[owner] = nil\n  end\nend\n'
+code+="handles.shortcut = \"$canonical\"; handles.desktopClick = $desktop_click; handles.mouseButton = $mouse_meta; handles.mouseGesture = $mouse_open
 r.latest = token
 r[token] = handles
 "
@@ -180,7 +182,7 @@ if [[ $desktop_click == true ]]; then
   }
 fi
 if [[ $mouse_open == true ]]; then
-  hyprctl binds -j | jq -e --arg key "mouse:$mouse_button" '[.[] | select(.key == $key and .modmask == 0 and ((.description // "") | startswith("Orb mouse button [orb:")))] | length == 1' >/dev/null || {
+  hyprctl binds -j | jq -e --arg key "mouse:$mouse_button" '[.[] | select(.key == $key and .modmask == 0 and ((.description // "") | startswith("Orb mouse button [orb:")))] | length == 2 and (map(select(.release == true)) | length == 1)' >/dev/null || {
     echo 'Orb mouse button did not register.' >&2; exit 1;
   }
 fi

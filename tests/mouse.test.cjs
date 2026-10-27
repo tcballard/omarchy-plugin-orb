@@ -17,7 +17,7 @@ test('an invalid mouse code does not fall back to button 277 while the option is
     assert.equal(JSON.parse(sig({ mouseOpen: true, mouseButton: 'nope' }))[3], 0);
     assert.notEqual(sig({ mouseOpen: true, mouseButton: 'abc' }), sig({ mouseOpen: true, mouseButton: 277 }));
     const invalid = { ...base, mouseOpen: true, mouseButton: 'abc' };
-    assert.match(model.parse(JSON.stringify(invalid), null).error, /272/);
+    assert.match(model.parse(JSON.stringify(invalid), null).error, /275/);
 });
 
 test('the mouse code does not change the bind while the option is off', () => {

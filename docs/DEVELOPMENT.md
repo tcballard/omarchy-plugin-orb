@@ -22,6 +22,15 @@ node tests/editor-live.cjs
 
 The harness refuses the host desktop. It saves/restores the nest's Orb config, uses real Wayland pointer/drag and keyboard input, and exercises size presets, direct catalog-to-wheel assignment, cancelled drops, draft/cancel/save/reopen, metadata retention, keyboard reordering, opening controls and live binding updates, shortcut conflicts, custom command arguments, submenu edits and launches, six-to-eight shortcuts and screen edges. Appearance checks open six/eight-slot Settings at all corners and both side edges, verify the entire panel is centred within reserved screen space, and retain the opening frame through tab changes, presets and full slider drags. Commands launch only a local argv-recording fixture. Captures and JSON results stay under ignored `artifacts/`. `--appearance-only` checks that placement and sizing; `--catalog-only` also checks presets and direct assignment; `--submenu-only` narrows a failed submenu check. No video is recorded.
 
+For the v0.3.0 extra-button gesture, use an owned, single-monitor, scale-1 unrotated nest linked to this checkout:
+
+```bash
+./tests/build-pointer
+node tests/gesture-live.cjs
+```
+
+The script selects an unused extra-button code, temporarily replaces only the nest's Orb settings, launches a private recording fixture, and restores the settings and pointer in cleanup. It checks tap/dismiss, directional launch, centre cancellation, submenu opening and removing both bindings. It does not test a physical mouse, multiple monitors or a button pressed over a real application. Also test those manually on the target desktop, including a conflicting binding, application input, keyboard use, shell/compositor reload, disable/removal and monitor edges. This test has not yet been run for v0.3.0.
+
 Every editor run also checks the installed version label and shortcut Undo: removal, keyboard/pointer reorder, additions, submenu edits and catalog assignments, retained origin identities, native text Undo, and preservation of appearance/opening drafts. Use `--undo-only` for that focused check.
 
 After committing a clean candidate, `node tests/release-live.cjs` runs only in an owned nest initially linked to this checkout. It installs the published v0.1.1 source from a private local Git origin, advances that origin to the candidate, and upgrades through the real plugin manager. It verifies byte-preserved legacy settings, eight slots, metadata, disable/enable/reload and owned bindings, removal, then a fresh Git installation with no existing Orb config. It restores the nest's original link, Orb config and shell settings in cleanup. It never uninstalls the host's Orb. Tests use the nest's selected Omarchy source with this machine's installed compositor and Quickshell; testing a 4.0.6 source checkout does not recreate the reporter's entire historical OS package set.

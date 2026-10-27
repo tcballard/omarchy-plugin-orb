@@ -17,6 +17,8 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: "22"
-      - name: Install Lua for binding lifecycle fixtures
-        run: sudo apt-get update && sudo apt-get install -y lua5.4
+      - name: Install Lua and QML parser
+        run: sudo apt-get update && sudo apt-get install -y lua5.4 qt6-declarative-dev-tools
       - run: ./tests/run
+      - name: Parse QML
+        run: for file in *.qml; do /usr/lib/qt6/bin/qmlformat -n "$file" >/dev/null; done

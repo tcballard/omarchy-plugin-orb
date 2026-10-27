@@ -10,6 +10,8 @@ PanelWindow {
     property bool shown: false
     property int shownKeyboardFocus: WlrKeyboardFocus.Exclusive
     property var targetScreen: null
+    property bool preferPointerScreen: false
+    property point openingPointer: Qt.point(0, 0)
     readonly property var targetMonitor: {
         var monitors = Hyprland.monitors.values;
         for (var i = 0; i < monitors.length; i++)
@@ -32,10 +34,23 @@ PanelWindow {
             if (Quickshell.screens[i].name === name) return Quickshell.screens[i];
         return Quickshell.screens.length ? Quickshell.screens[0] : null;
     }
+    function screenAtPointer(point) {
+        var monitors = Hyprland.monitors.values;
+        for (var i = 0; i < monitors.length; i++) {
+            var data = monitors[i].lastIpcObject || ({});
+            for (var j = 0; j < Quickshell.screens.length; j++) {
+                var candidate = Quickshell.screens[j];
+                if (candidate.name !== monitors[i].name || !isFinite(data.x) || !isFinite(data.y)) continue;
+                if (point.x >= data.x && point.x < data.x + candidate.width
+                    && point.y >= data.y && point.y < data.y + candidate.height) return candidate;
+            }
+        }
+        return null;
+    }
     // Freeze the selected screen for this opening. A focus change must not
     // combine one screen's coordinates with another monitor's reserved area.
     onShownChanged: {
-        targetScreen = shown ? focusedScreen() : null;
+        targetScreen = shown ? ((preferPointerScreen && screenAtPointer(openingPointer)) || focusedScreen()) : null;
         if (shown) Hyprland.refreshMonitors();
     }
     onDevicePixelRatioChanged: if (shown) Hyprland.refreshMonitors()

@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.2.0 — release candidate
+## 0.3.0 — in development
+
+- Use an optional extra mouse button to open Orb anywhere. Tap to keep the wheel open, or hold, move and release to launch a shortcut. Centre and outside releases cancel; submenus stay open for a second selection.
+- Configure the button in Opening with conflict checks and without taking over left, right or middle click. Thanks to Michal Mazurek for the original mouse-button contribution.
+- The gesture needs live Omarchy acceptance before release.
+
+## 0.2.0 — 2026-10-23
 
 - Open on Omarchy 4.0.6 without depending on the newer shell's overlay and animation helpers; keep the installed-app catalog available when that shell omits its app-library service.
 - Undo shortcut additions, removals, replacements and reordering with Undo or Ctrl+Z, keeping appearance and opening drafts.
@@ -13,7 +19,6 @@
 - Browse actions beside the wheel and drag apps, shortcuts or submenus directly onto slots; click and keyboard assignment remain available.
 - Arrange shortcuts by dragging around a wheel preview, with keyboard and button alternatives.
 - Change the opening shortcut and desktop right-click in Settings, with validation and conflict checks before saving.
-- Open Orb from any place with an optional mouse button. The default code is 277, and you can choose 272–279. The button stays off until you turn it on.
 - Create and edit custom commands, including separate arguments and an icon picker.
 - Add, edit, reorder and remove submenu actions without editing JSON.
 - Keep Settings at its opening size while switching tabs or editing shortcuts and submenus.

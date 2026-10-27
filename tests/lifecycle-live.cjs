@@ -51,7 +51,7 @@ async function install(){console.log(run('omarchy','plugin','add',installUrl,'--
   let binds=json('hyprctl','binds','-j').filter(isOrb);
   assert.equal(binds.filter(b=>b.description.startsWith('Orb shortcut wheel [orb:')).length,1);
   assert.equal(binds.filter(b=>b.description.startsWith('Orb on empty desktop [orb:')).length,config.desktopRightClick?1:0);
-  assert.equal(binds.filter(b=>b.description.startsWith('Orb mouse button [orb:')).length,config.mouseOpen?1:0);
+  assert.equal(binds.filter(b=>b.description.startsWith('Orb mouse button [orb:')).length,config.mouseOpen?2:0);
   assert.ok(!fs.existsSync(paths.bindings)||!read(paths.bindings).includes('require("orb") -- Orb shortcut wheel'));
   pass('Fresh Git reinstall enables the exact candidate with one shortcut and the configured right-click binding');
   console.log(run('omarchy','plugin','disable',id));

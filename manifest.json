@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.tcballard.orb",
   "name": "Orb",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": "Tom Ballard",
   "license": "MIT",
   "description": "A themed shortcut wheel with five to eight slots, circle or polygon outlines, and submenus.",

@@ -425,8 +425,20 @@ FocusScope {
                 EditorLabel { width: parent.width; wrapMode: Text.WordWrap; text: "Orb checks for shortcut conflicts before saving."; opacity: 0.65 }
                 EditorButton { objectName: "orb-desktop-click"; text: "Right-click on empty desktop · " + (panel.desktopRightClick ? "On" : "Off"); selected: panel.desktopRightClick; enabled: !panel.busy; onClicked: panel.desktopRightClick = !panel.desktopRightClick }
                 EditorLabel { width: parent.width; wrapMode: Text.WordWrap; text: "Applications keep their context menus. On the wallpaper, Orb replaces the right-double-click theme gesture."; opacity: 0.65 }
-                EditorButton { objectName: "orb-mouse-button"; text: "Mouse button · " + (panel.mouseOpen ? "On" : "Off"); selected: panel.mouseOpen; enabled: !panel.busy; onClicked: panel.mouseOpen = !panel.mouseOpen }
-                EditorLabel { text: "Mouse code · 272–279" }
+                EditorButton { objectName: "orb-mouse-button"; text: "Extra mouse button · " + (panel.mouseOpen ? "On" : "Off"); selected: panel.mouseOpen; enabled: !panel.busy; onClicked: panel.mouseOpen = !panel.mouseOpen }
+                EditorLabel { width: parent.width; wrapMode: Text.WordWrap; text: "Tap to open Orb, or hold, move and release to launch. The chosen button is used by Orb in other apps too."; opacity: 0.65 }
+                EditorLabel { text: "Button code · 275–511" }
+                Row {
+                    width: parent.width; spacing: Commons.Style.space(6)
+                    Repeater {
+                        model: [275, 276, 277]
+                        delegate: EditorButton {
+                            required property int modelData
+                            text: "Button " + modelData; selected: panel.mouseButtonText === String(modelData)
+                            enabled: !panel.busy; onClicked: panel.mouseButtonText = String(modelData)
+                        }
+                    }
+                }
                 TextField {
                     id: mouseCode
                     objectName: "orb-mouse-code"
@@ -434,7 +446,7 @@ FocusScope {
                     text: panel.mouseButtonText; placeholderText: "277"
                     onTextEdited: panel.mouseButtonText = text
                 }
-                EditorLabel { width: parent.width; wrapMode: Text.WordWrap; text: panel.activationError || "When Mouse button is on, this code opens Orb from any place. The default code is 277."; color: panel.activationError ? Commons.Color.urgent : Commons.Color.menu.text; opacity: panel.activationError ? 1 : 0.65 }
+                EditorLabel { width: parent.width; wrapMode: Text.WordWrap; text: panel.activationError || "Button codes vary by mouse. Use wev to identify yours; left, right and middle click remain available."; color: panel.activationError ? Commons.Color.urgent : Commons.Color.menu.text; opacity: panel.activationError ? 1 : 0.65 }
             }
             ActionEditor {
                 id: actionEditor
