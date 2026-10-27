@@ -4,20 +4,28 @@ set -euo pipefail
 script_dir=$(dirname -- "$(readlink -f -- "$0")")
 install_bases=()
 if command -v mise >/dev/null; then
-  installed=$(mise ls --installed --json) || exit 1
+  installed=$(MISE_OFFLINE=1 mise ls --installed --json) || exit 1
   mapfile -t install_bases < <(jq -r '[.[][]] | sort_by(.active // false) | reverse | .[].install_path' <<< "$installed")
 fi
+installed_binary() {
+  local candidate=$1 target
+  [[ $candidate != */mise/shims/* && $candidate != */command-wrappers/* ]] || return 1
+  [[ -f $candidate && -x $candidate ]] || return 1
+  target=$(readlink -f -- "$candidate") || return 1
+  [[ $target != */mise/shims/* && $target != */command-wrappers/* ]] || return 1
+  if grep -Iq . "$target" && grep -Eq 'mise[[:space:]]+(use|x|exec|install)([[:space:]]|$)|omarchy-install-.*--now' "$target"; then return 1; fi
+}
 resolve() {
   local executable=$1 tool=$2 candidate base
   # Prefer real user/system executables over mise's first-run installers.
   while IFS= read -r candidate; do
-    [[ $candidate != */mise/shims/* && $candidate != */command-wrappers/* ]] || continue
-    if [[ -f $candidate ]] && grep -Iq . "$candidate" && grep -Eq 'mise use -g|omarchy-install-.*--now' "$candidate"; then continue; fi
-    [[ -x $candidate ]] && { printf '%s\n' "$candidate"; return; }
+    installed_binary "$candidate" && { printf '%s\n' "$candidate"; return; }
   done < <(type -aP "$executable" 2>/dev/null || true)
+  candidate="$HOME/.local/bin/$executable"
+  installed_binary "$candidate" && { printf '%s\n' "$candidate"; return; }
   for base in "${install_bases[@]}"; do
     for candidate in "$base/bin/$executable" "$base/$executable"; do
-      [[ ! -x $candidate ]] || { printf '%s\n' "$candidate"; return; }
+      installed_binary "$candidate" && { printf '%s\n' "$candidate"; return; }
     done
   done
   return 1
@@ -47,6 +55,15 @@ muse|Muse Code|muse
 kimi|Kimi|npm:@moonshot-ai/kimi-code
 hermes|Hermes|hermes
 openclaw|OpenClaw|openclaw
+qwen|Qwen Code|qwen
+dsh|DeepSeek Harness|npm:@deepseek-ai/dsh
+mcode|MiniMax Code|npm:@minimax-ai/code
+kiro-cli|Kiro CLI|http:kiro-cli
+freebuff|Freebuff|npm:freebuff
+kilo|Kilo|npm:@kilocode/cli
+devin|Devin CLI|http:devin
+amp|Amp|amp
+commandcode|Command Code|npm:command-code
 CATALOG
 [[ ${1:-} != --resolve ]] || exit 1
 printf '%s\n' "${rows[@]}" | jq -s .

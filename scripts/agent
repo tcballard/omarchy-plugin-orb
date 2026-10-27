@@ -20,6 +20,8 @@ if [[ -n $account_var ]]; then
 fi
 case "$provider" in
   ori) exec "$binary" code ;;
+  dsh) exec "$binary" web ;;
+  kiro-cli) exec "$binary" chat ;;
   openclaw) exec omarchy-launch-openclaw --tui ;;
   *) exec "$binary" ;;
 esac
