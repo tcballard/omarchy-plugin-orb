@@ -8,6 +8,8 @@ Portable checks (Node 22+, Bash, jq, Lua 5.4 or texlua; no npm dependencies):
 
 This retains the starter identity/CI checks and adds geometry/config tests. On Omarchy, `./tests/native` also runs the installed manifest validator and Qt's QML parser. Parsing is not runtime verification.
 
+`node --test tests/surface.test.mjs` checks the handlers and readiness expressions in `OrbOverlay.qml`, including output selection, focus changes, scale readiness, deferred reveal and screen removal. These fixtures do not instantiate QML or exercise layer-shell mapping. The original issue #10 still needs confirmation on the reporter's full historical package stack and live multi-monitor/fractional-scale checks.
+
 Install from main with `omarchy plugin add https://github.com/tcballard/omarchy-plugin-orb.git --enable`. For a committed development checkout, use the supported local Git URL with `omarchy plugin add "$PWD" --enable --yes`. Normal updates use `omarchy plugin update io.github.tcballard.orb`; remove with `omarchy plugin remove io.github.tcballard.orb`. The compatibility `./install` and `./uninstall` wrappers only forward to the native manager. No post-install terminal command is needed.
 
 The current settings acceptance harness runs **only in an owned omadev nest**:
