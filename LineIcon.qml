@@ -20,6 +20,28 @@ Canvas {
             line([8,4,3,9,8,14]);
             c.beginPath(); c.moveTo(3,9); c.lineTo(14,9);
             c.bezierCurveTo(23,9,23,20,14,20); c.stroke();
+        } else if (name === "search") {
+            circle(10,10,7); line([15,15,21,21]);
+        } else if (name === "link") {
+            c.beginPath(); c.moveTo(10,14); c.lineTo(14,10); c.stroke();
+            c.beginPath(); c.moveTo(8,16); c.lineTo(6,18); c.bezierCurveTo(1,22,0,16,4,12); c.lineTo(8,8); c.bezierCurveTo(10,6,12,6,14,8); c.stroke();
+            c.beginPath(); c.moveTo(16,8); c.lineTo(18,6); c.bezierCurveTo(23,2,24,8,20,12); c.lineTo(16,16); c.bezierCurveTo(14,18,12,18,10,16); c.stroke();
+        } else if (name === "code") {
+            line([8,6,2,12,8,18]); line([16,6,22,12,16,18]); line([14,3,10,21]);
+        } else if (name === "calendar") {
+            c.strokeRect(3,5,18,16); line([3,10,21,10]); line([7,2,7,7]); line([17,2,17,7]); line([7,14,9,14]); line([13,14,15,14]); line([7,18,9,18]);
+        } else if (name === "clock") {
+            circle(12,12,9); line([12,6,12,12,17,15]);
+        } else if (name === "mail") {
+            c.strokeRect(2,5,20,14); line([2,6,12,13,22,6]);
+        } else if (name === "lock") {
+            c.strokeRect(5,10,14,11); c.beginPath(); c.arc(12,10,5,Math.PI,0); c.stroke(); line([12,14,12,17]);
+        } else if (name === "power") {
+            line([12,2,12,12]); c.beginPath(); c.arc(12,12,9,-Math.PI/3, -2*Math.PI/3); c.stroke();
+        } else if (name === "cloud") {
+            c.beginPath(); c.moveTo(6,19); c.bezierCurveTo(0,19,0,11,6,10); c.bezierCurveTo(7,3,17,3,18,10); c.bezierCurveTo(24,10,24,19,18,19); c.closePath(); c.stroke();
+        } else if (name === "bookmark") {
+            line([6,3,18,3,18,21,12,17,6,21,6,3]);
         } else if (name === "browser") {
             circle(12,12,9); line([3,12,21,12]);
             c.beginPath(); c.ellipse(8,3,8,18); c.stroke();

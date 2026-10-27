@@ -1,6 +1,15 @@
 // Pure geometry and validation, shared by the hosted QML and Node tests.
 var icons = ["browser", "terminal", "files", "screenshot", "themes", "plugins", "agents", "settings", "codex", "claude", "grok", "postcard", "app", "create",
-    "home", "recent", "starred", "downloads", "documents", "pictures", "music", "videos", "trash"];
+    "home", "recent", "starred", "downloads", "documents", "pictures", "music", "videos", "trash",
+    "search", "link", "code", "calendar", "clock", "mail", "lock", "power", "cloud", "bookmark"];
+function validIcon(value) {
+    return typeof value === "string" && (icons.indexOf(value) >= 0 ||
+        (value.length <= 4096 && /^\/[^\x00-\x1f]*\.(svg|png|jpe?g|webp)$/i.test(value)));
+}
+function iconUrl(value) {
+    return validIcon(value) && value.charAt(0) === "/"
+        ? "file://" + value.split("/").map(encodeURIComponent).join("/") : "";
+}
 function fileActions(helper) {
     return ["Home", "Recent", "Starred", "Downloads", "Documents", "Pictures", "Music", "Videos", "Trash"].map(function(label) {
         var id = label.toLowerCase();
@@ -80,7 +89,7 @@ function move(items, from, to) {
     return copy;
 }
 function action(a, depth) {
-    if (!a || typeof a.label !== "string" || !a.label.trim() || a.label.length > 20 || icons.indexOf(a.icon) < 0) return null;
+    if (!a || typeof a.label !== "string" || !a.label.trim() || a.label.length > 20 || !validIcon(a.icon)) return null;
     var out = { label: a.label.trim(), icon: a.icon };
     if (a.desktopId !== undefined) {
         if (typeof a.desktopId !== "string" || !/^[A-Za-z0-9_.@+-]{1,255}$/.test(a.desktopId) || a.command || a.menu || a.children) return null;
@@ -239,5 +248,5 @@ function placement(px, py, width, height, reserved, preferred) {
         x: Math.max(left, Math.min(px - size / 2, left + availableW - size)),
         y: Math.max(top, Math.min(py - size / 2, top + availableH - size - footer)) };
 }
-if (typeof module !== "undefined") module.exports = { parse: parse, action: action, icons: icons, fileActions: fileActions, shortcut: shortcut, mouseButton: mouseButton, bindingSignature: bindingSignature, bindingConflict: bindingConflict, edgeRadius: edgeRadius,
+if (typeof module !== "undefined") module.exports = { parse: parse, action: action, icons: icons, validIcon: validIcon, iconUrl: iconUrl, fileActions: fileActions, shortcut: shortcut, mouseButton: mouseButton, bindingSignature: bindingSignature, bindingConflict: bindingConflict, edgeRadius: edgeRadius,
     move: move, hit: hit, placement: placement, mergeSettings: mergeSettings };

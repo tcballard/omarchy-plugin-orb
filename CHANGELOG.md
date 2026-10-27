@@ -2,6 +2,8 @@
 
 ## 0.3.0 — in development
 
+- Choose from more icons or use a local image for custom commands and submenus.
+
 - Use an optional extra mouse button to open Orb anywhere. Tap to keep the wheel open, or hold, move and release to launch a shortcut. Centre and outside releases cancel; submenus stay open for a second selection.
 - Configure the button in Opening with conflict checks and without taking over left, right or middle click. Thanks to Michal Mazurek for the original mouse-button contribution.
 - The gesture needs live Omarchy acceptance before release.

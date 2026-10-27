@@ -12,6 +12,7 @@ FocusScope {
     property alias pickerCursor: actionPicker.cursor
     property string actionLabel: ""
     property string actionIcon: "terminal"
+    property string customIconPath: ""
     property string program: ""
     property var commandArguments: []
     property var submenuActions: []
@@ -31,6 +32,7 @@ FocusScope {
         initial = value ? JSON.parse(JSON.stringify(value)) : null;
         choices = catalog; depth = level || 0; error = ""; editingChild = -1;
         actionLabel = value ? value.label : ""; actionIcon = value ? value.icon : "terminal";
+        customIconPath = value && value.icon && value.icon.charAt(0) === "/" ? value.icon : "";
         program = value && value.command ? value.command[0] : "";
         commandArguments = value && value.command ? value.command.slice(1) : [];
         submenuActions = value && value.children ? JSON.parse(JSON.stringify(value.children)) : [];
@@ -63,7 +65,7 @@ FocusScope {
         var checked = Model.action(JSON.parse(JSON.stringify(value)), editor.depth);
         if (!checked) {
             error = !actionLabel.trim() ? "Give this action a name." : mode === 1 && !program ? "Enter the program to run."
-                : mode === 2 && !submenuActions.length ? "Add at least one submenu action." : "Check the name, program and arguments before continuing.";
+                : mode === 2 && !submenuActions.length ? "Add at least one submenu action." : !Model.validIcon(actionIcon) ? "Choose an icon or enter an absolute image path." : "Check the name, program and arguments before continuing.";
             return;
         }
         chosen(checked, childOrigins);
@@ -136,10 +138,27 @@ FocusScope {
                         width: (content.width - parent.spacing * 6) / 7; height: Commons.Style.space(34)
                         tooltipText: modelData; selected: editor.actionIcon === modelData; enabled: !editor.busy
                         ActionIcon { anchors.centerIn: parent; width: Commons.Style.space(20); height: width; name: modelData; selected: editor.actionIcon === modelData }
-                        onClicked: editor.actionIcon = modelData
+                        onClicked: { editor.actionIcon = modelData; editor.customIconPath = ""; }
                     }
                 }
             }
+            EditorLabel { text: "Or use a local image" }
+            Row {
+                width: parent.width; spacing: Commons.Style.space(6)
+                TextField {
+                    objectName: editor.controlPrefix + "icon-path"
+                    width: parent.width - Commons.Style.space(34) - parent.spacing
+                    text: editor.customIconPath; enabled: !editor.busy; maximumLength: 4096
+                    placeholderText: "/absolute/path/to/icon.svg"
+                    onTextEdited: { editor.customIconPath = text; editor.actionIcon = text; }
+                }
+                ActionIcon {
+                    width: Commons.Style.space(34); height: width
+                    name: Model.validIcon(editor.actionIcon) ? editor.actionIcon : "app"
+                }
+            }
+            EditorLabel { width: parent.width; wrapMode: Text.WordWrap; opacity: 0.65
+                text: "Absolute path to an SVG, PNG, JPEG or WebP image. Keep the file in place; missing images use a fallback icon." }
         }
         Column {
             visible: editor.mode === 1
