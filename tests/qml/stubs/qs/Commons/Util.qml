@@ -1,5 +1,5 @@
 pragma Singleton
 import QtQuick
 QtObject {
-    function alpha(color, opacity) { var c = Qt.color(color); return Qt.rgba(c.r, c.g, c.b, opacity); }
+    function alpha(color: color, opacity: real): color { return Qt.rgba(color.r, color.g, color.b, opacity); }
 }

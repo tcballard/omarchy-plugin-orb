@@ -79,8 +79,9 @@ FocusScope {
         }
         Column {
             anchors.fill: parent; visible: home.page === "apps"; spacing: 8
-            TextField {
+            EditorField {
                 id: search; width: parent.width; height: 50
+                objectName: "orb-touch-search"
                 placeholderText: "Find an app"; text: home.query
                 onTextEdited: home.query = text
                 onActiveFocusChanged: if (activeFocus && home.backend) home.backend.keyboard(true)
@@ -143,7 +144,7 @@ FocusScope {
                             width: parent.width; spacing: 6
                             TouchButton { width: (parent.width - 12) / 3; text: "Maximise"; onClicked: home.action(["window", "maximize", modelData.address], true) }
                             TouchButton { width: (parent.width - 12) / 3; text: "Move"; onClicked: home.movingWindow = modelData.address }
-                            TouchButton { width: (parent.width - 12) / 3; text: home.pendingClose === modelData.address ? "Confirm close" : "Close"; onClicked: { if (home.pendingClose === modelData.address) home.action(["window", "close", modelData.address], false); else home.pendingClose = modelData.address; } }
+                            TouchButton { width: (parent.width - 12) / 3; objectName: "orb-touch-close-" + modelData.address; text: home.pendingClose === modelData.address ? "Confirm close" : "Close"; onClicked: { if (home.pendingClose === modelData.address) home.action(["window", "close", modelData.address], false); else home.pendingClose = modelData.address; } }
                         }
                     }
                 }

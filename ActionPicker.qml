@@ -49,7 +49,7 @@ FocusScope {
     Column {
         id: content
         width: parent.width; spacing: Commons.Style.space(8)
-        TextField {
+        EditorField {
             id: search
             objectName: picker.controlPrefix + "search"
             width: parent.width; placeholderText: "Search apps and shortcuts…"; enabled: !picker.busy

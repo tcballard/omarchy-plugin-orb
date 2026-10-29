@@ -542,7 +542,10 @@ Item {
         target: panel
         function onContentReadyChanged() { if (panel.contentReady) root.updateGestureSelection(); }
         function onContentRevealedChanged() {
-            if (panel.contentRevealed) { root.updateGestureSelection(); root.finishGesture(); }
+            if (panel.contentRevealed) {
+                root.updateGestureSelection(); root.finishGesture();
+                if (root.settingsOpen) Qt.callLater(touchBackend.raiseKeyboard);
+            }
         }
     }
     Process {
@@ -575,6 +578,7 @@ Item {
         respectReserved: true
         shownKeyboardFocus: WlrKeyboardFocus.OnDemand
         WlrLayershell.namespace: "omarchy-orb-touch"
+        onContentRevealedChanged: if (contentRevealed) Qt.callLater(touchBackend.raiseKeyboard)
         TouchHome {
             id: touchHome
             x: Math.max(8, (parent.width - width) / 2); y: 8

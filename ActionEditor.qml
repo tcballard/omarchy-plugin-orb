@@ -133,7 +133,7 @@ FocusScope {
             visible: editor.mode !== 0
             width: parent.width; spacing: Commons.Style.space(8)
             EditorLabel { text: "Name" }
-            TextField {
+            EditorField {
                 id: labelInput
                 objectName: editor.controlPrefix + "name"
                 width: parent.width; maximumLength: 20; text: editor.actionLabel; enabled: !editor.busy
@@ -158,7 +158,7 @@ FocusScope {
             EditorButton { text: "Choose image…"; enabled: !editor.busy; onClicked: iconDialog.open() }
             Row {
                 width: parent.width; spacing: Commons.Style.space(6)
-                TextField {
+                EditorField {
                     objectName: editor.controlPrefix + "icon-path"
                     width: parent.width - Commons.Style.space(34) - parent.spacing
                     text: editor.customIconPath; enabled: !editor.busy; maximumLength: 4096
@@ -177,7 +177,7 @@ FocusScope {
             visible: editor.mode === 1
             width: parent.width; spacing: Commons.Style.space(8)
             EditorLabel { text: "Program" }
-            TextField {
+            EditorField {
                 objectName: editor.controlPrefix + "program"
                 width: parent.width; text: editor.program; placeholderText: "e.g. notify-send or /path/to/script"; enabled: !editor.busy
                 maximumLength: 4096; onTextEdited: editor.program = text
@@ -189,7 +189,7 @@ FocusScope {
                 delegate: Row {
                     required property int index
                     width: content.width; spacing: Commons.Style.space(6)
-                    TextField {
+                    EditorField {
                         id: argumentInput
                         objectName: editor.controlPrefix + "argument-" + index
                         width: parent.width - removeArgument.width - parent.spacing
@@ -200,7 +200,7 @@ FocusScope {
                     property alias input: argumentInput
                     EditorButton {
                         id: removeArgument
-                        width: Commons.Style.space(32); text: "×"; tooltipText: "Remove argument"; enabled: !editor.busy
+                        width: 48; text: "×"; tooltipText: "Remove argument"; enabled: !editor.busy
                         onClicked: editor.removeArgument(index)
                     }
                 }
@@ -228,13 +228,13 @@ FocusScope {
                     width: content.width; spacing: Commons.Style.space(4)
                     EditorButton {
                         objectName: editor.controlPrefix + "edit-child-" + index
-                        width: parent.width - Commons.Style.space(108) - parent.spacing * 3
+                        width: parent.width - 144 - parent.spacing * 3
                         text: (index + 1) + " · " + modelData.label; leftAlign: true; enabled: !editor.busy
                         onClicked: editor.editChild(index)
                     }
-                    EditorButton { objectName: editor.controlPrefix + "up-child-" + index; width: Commons.Style.space(32); text: "↑"; tooltipText: "Move up"; enabled: !editor.busy && index > 0; onClicked: editor.moveChild(index, index - 1) }
-                    EditorButton { objectName: editor.controlPrefix + "down-child-" + index; width: Commons.Style.space(32); text: "↓"; tooltipText: "Move down"; enabled: !editor.busy && index < editor.submenuActions.length - 1; onClicked: editor.moveChild(index, index + 1) }
-                    EditorButton { objectName: editor.controlPrefix + "remove-child-" + index; width: Commons.Style.space(36); text: "×"; tooltipText: "Remove action"; enabled: !editor.busy; onClicked: editor.removeChild(index) }
+                    EditorButton { objectName: editor.controlPrefix + "up-child-" + index; width: 48; text: "↑"; tooltipText: "Move up"; enabled: !editor.busy && index > 0; onClicked: editor.moveChild(index, index - 1) }
+                    EditorButton { objectName: editor.controlPrefix + "down-child-" + index; width: 48; text: "↓"; tooltipText: "Move down"; enabled: !editor.busy && index < editor.submenuActions.length - 1; onClicked: editor.moveChild(index, index + 1) }
+                    EditorButton { objectName: editor.controlPrefix + "remove-child-" + index; width: 48; text: "×"; tooltipText: "Remove action"; enabled: !editor.busy; onClicked: editor.removeChild(index) }
                 }
             }
             EditorButton { objectName: editor.controlPrefix + "add-child"; text: "+ Add action"; enabled: !editor.busy && editor.submenuActions.length < 12; onClicked: editor.editChild(editor.submenuActions.length) }

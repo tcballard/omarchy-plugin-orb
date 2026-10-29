@@ -421,7 +421,7 @@ FocusScope {
                     }
                 }
                 EditorLabel { text: "Key · letter, number, F1–F12 or Space" }
-                TextField {
+                EditorField {
                     id: openingKey
                     objectName: "orb-opening-key"
                     width: Math.min(parent.width, Commons.Style.space(180)); maximumLength: 5; enabled: !panel.busy
@@ -446,7 +446,7 @@ FocusScope {
                         }
                     }
                 }
-                TextField {
+                EditorField {
                     id: mouseCode
                     objectName: "orb-mouse-code"
                     width: Math.min(parent.width, Commons.Style.space(180)); maximumLength: 3; enabled: !panel.busy

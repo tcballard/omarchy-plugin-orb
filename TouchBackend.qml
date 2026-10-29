@@ -17,7 +17,9 @@ Item {
     property int requestGeneration: 0
     property string requestKind: ""
     property var current: []
-    readonly property bool busy: action.running
+    property bool actionPending: false
+    property string pendingKeyboard: ""
+    readonly property bool busy: actionPending
     readonly property string helper: decodeURIComponent(Qt.resolvedUrl("scripts/touch").toString().replace(/^file:\/\//, ""))
     signal completed(string kind, bool success)
 
@@ -30,20 +32,24 @@ Item {
     }
     function cancelView() {
         generation++;
+        pendingKeyboard = "";
         windowProcess.running = false;
         action.running = false;
     }
     function run(args) {
-        if (action.running) return false;
+        if (actionPending) return false;
         error = ""; current = args; requestKind = String(args[0]); requestGeneration = generation;
         action.command = ["bash", helper].concat(args);
+        action.timedOut = false; actionPending = true;
         action.running = true;
         return true;
     }
-    function keyboard(show) {
-        if (show && keyboardSpace) return;
+    function keyboard(show, raise) {
+        if (show && keyboardSpace && !raise) return;
+        if (busy) { pendingKeyboard = show ? "show" : "hide"; return; }
         run(["keyboard", keyboardProvider, show ? "show" : "hide"]);
     }
+    function raiseKeyboard() { if (viewOpen && keyboardSpace) keyboard(true, true); }
     onModeChanged: { capabilities = { ok: false }; if (mode === "auto") refresh(); }
     onViewOpenChanged: {
         if (viewOpen) { refresh(); refreshWindows(); }
@@ -89,24 +95,32 @@ Item {
     }
     Process {
         id: action
+        property bool timedOut: false
         stdout: StdioCollector { id: actionOutput }
         onExited: (code, status) => {
+            backend.actionPending = false;
             var ok = false, message = "The action did not complete.";
             try {
                 var result = JSON.parse(actionOutput.text);
                 ok = code === 0 && result.ok === true;
                 message = String(result.error || message).slice(0, 250);
             } catch (e) {}
+            if (timedOut) { ok = false; message = "The action timed out. Retry when the service responds."; }
             if (backend.requestGeneration !== backend.generation) return;
             if (!ok) backend.error = message;
             if (ok && backend.requestKind === "keyboard") backend.keyboardSpace = backend.current[2] === "show";
             backend.completed(backend.requestKind, ok);
             if (ok) { backend.refresh(); backend.refreshWindows(); }
+            if (backend.pendingKeyboard && backend.viewOpen) {
+                var show = backend.pendingKeyboard === "show";
+                backend.pendingKeyboard = "";
+                Qt.callLater(function() { if (backend.viewOpen) backend.keyboard(show, true); });
+            }
         }
     }
     Timer {
         interval: 15000; running: action.running
-        onTriggered: { backend.error = "The action timed out. Retry when the service responds."; action.running = false; }
+        onTriggered: { action.timedOut = true; backend.error = "The action timed out. Retry when the service responds."; action.running = false; }
     }
     Timer { interval: 15000; running: statusProcess.running; onTriggered: { backend.capabilities = { ok: false }; statusProcess.running = false; } }
     Timer { interval: 10000; running: windowProcess.running; onTriggered: { backend.error = "Window discovery timed out."; windowProcess.running = false; } }

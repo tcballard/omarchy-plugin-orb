@@ -5,6 +5,7 @@ import "../.." as Orb
 TestCase {
     id: testCase
     name: "OrbTouchWheel"
+    visible: true
     width: 800; height: 800
     when: windowShown
     Orb.TouchWheel {
@@ -15,8 +16,9 @@ TestCase {
     SignalSpy { id: launched; target: wheel; signalName: "activated" }
     SignalSpy { id: edited; target: wheel; signalName: "edited" }
     function init() {
+        failOnWarning(/.*/);
         wheel.width = 744; wheel.height = 744; wheel.shape = "ring"; wheel.dragSelection = false;
-        wheel.cancel(); launched.clear(); edited.clear(); waitForRendering(wheel);
+        wheel.cancel(); launched.clear(); edited.clear(); verify(waitForRendering(wheel));
     }
     function test_pointer_tap() {
         var p = wheel.geometry.points[2];
@@ -25,8 +27,9 @@ TestCase {
     }
     function test_raw_touch_tap_once() {
         var p = wheel.geometry.points[1];
-        touchEvent(wheel).press(0, wheel, p.x, p.y).commit();
-        touchEvent(wheel).release(0, wheel, p.x, p.y).commit();
+        var touch = touchEvent(wheel);
+        touch.press(0, wheel, p.x, p.y).commit();
+        touch.release(0, wheel, p.x, p.y).commit();
         compare(launched.count, 1); compare(launched.signalArguments[0][0], 1);
     }
     function test_drag_requires_opt_in_and_can_cancel() {
