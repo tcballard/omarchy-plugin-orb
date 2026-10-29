@@ -4,7 +4,7 @@ import qs.Commons as Commons
 import "TouchModel.js" as TouchModel
 
 Item {
-    id: wheel
+    id: touchWheel
     property var actions: []
     property var iconSources: []
     property string edge: "right"
@@ -31,62 +31,62 @@ Item {
     Timer {
         id: hold; interval: 550
         onTriggered: {
-            if (wheel.interaction && !wheel.interaction.moved && wheel.interaction.first >= 0) {
-                var index = wheel.interaction.first;
-                wheel.interaction = Object.assign({}, wheel.interaction, { held: true });
-                wheel.edited(index);
+            if (touchWheel.interaction && !touchWheel.interaction.moved && touchWheel.interaction.first >= 0) {
+                var index = touchWheel.interaction.first;
+                touchWheel.interaction = Object.assign({}, touchWheel.interaction, { held: true });
+                touchWheel.edited(index);
             }
         }
     }
     Repeater {
-        model: wheel.geometry.grid ? [] : wheel.actions
+        model: touchWheel.geometry.grid ? [] : touchWheel.actions
         delegate: Rectangle {
             required property int index
             required property var modelData
-            readonly property bool chosen: wheel.interaction && wheel.interaction.selected === index
-            x: wheel.geometry.points[index].x - width / 2; y: wheel.geometry.points[index].y - height / 2
-            width: wheel.geometry.size; height: width
+            readonly property bool chosen: touchWheel.interaction && touchWheel.interaction.selected === index
+            x: touchWheel.geometry.points[index].x - width / 2; y: touchWheel.geometry.points[index].y - height / 2
+            width: touchWheel.geometry.size; height: width
             radius: Commons.Style.cornerRadius
             color: chosen || activeFocus ? Commons.Color.menu.selectedBackground : Commons.Color.menu.background
             border.width: chosen || activeFocus ? 2 : 1
             border.color: chosen || activeFocus ? Commons.Color.menu.selectedBorder : Commons.Util.alpha(Commons.Color.menu.text, 0.35)
             activeFocusOnTab: true
             Accessible.role: Accessible.Button; Accessible.name: modelData.label
-            Accessible.onPressAction: wheel.activated(index)
-            Keys.onReturnPressed: wheel.activated(index)
-            Keys.onSpacePressed: wheel.activated(index)
+            Accessible.onPressAction: touchWheel.activated(index)
+            Keys.onReturnPressed: touchWheel.activated(index)
+            Keys.onSpacePressed: touchWheel.activated(index)
             ActionIcon {
                 anchors.horizontalCenter: parent.horizontalCenter; y: 10
-                width: 30 * wheel.targetScale; height: width
-                name: modelData.icon; appSource: wheel.iconSources[index] || ""; selected: parent.chosen
+                width: 30 * touchWheel.targetScale; height: width
+                name: modelData.icon; appSource: touchWheel.iconSources[index] || ""; selected: parent.chosen
                 ink: Commons.Color.menu.text
             }
             Text {
                 x: 4; width: parent.width - 8; anchors.bottom: parent.bottom; anchors.bottomMargin: 8
                 text: modelData.label; textFormat: Text.PlainText; elide: Text.ElideRight
-                horizontalAlignment: Text.AlignHCenter; font.pixelSize: 12 * wheel.targetScale
+                horizontalAlignment: Text.AlignHCenter; font.pixelSize: 12 * touchWheel.targetScale
                 font.family: Commons.Style.font.menuFamily; color: Commons.Color.menu.text
             }
         }
     }
     MouseArea {
-        anchors.fill: parent; enabled: !wheel.geometry.grid; acceptedButtons: Qt.LeftButton
-        onPressed: mouse => wheel.press(mouse.x, mouse.y)
-        onPositionChanged: mouse => { if (pressed) wheel.move(mouse.x, mouse.y); }
-        onReleased: mouse => wheel.release(mouse.x, mouse.y)
-        onCanceled: wheel.cancel()
+        anchors.fill: parent; enabled: !touchWheel.geometry.grid; acceptedButtons: Qt.LeftButton
+        onPressed: mouse => touchWheel.press(mouse.x, mouse.y)
+        onPositionChanged: mouse => { if (pressed) touchWheel.move(mouse.x, mouse.y); }
+        onReleased: mouse => touchWheel.release(mouse.x, mouse.y)
+        onCanceled: touchWheel.cancel()
     }
     MultiPointTouchArea {
-        anchors.fill: parent; enabled: !wheel.geometry.grid; minimumTouchPoints: 1; maximumTouchPoints: 1; mouseEnabled: false
-        onPressed: points => { if (points.length) wheel.press(points[0].x, points[0].y); }
-        onUpdated: points => { if (points.length) wheel.move(points[0].x, points[0].y); }
-        onReleased: points => { if (points.length) wheel.release(points[0].x, points[0].y); }
-        onCanceled: wheel.cancel()
+        anchors.fill: parent; enabled: !touchWheel.geometry.grid; minimumTouchPoints: 1; maximumTouchPoints: 1; mouseEnabled: false
+        onPressed: points => { if (points.length) touchWheel.press(points[0].x, points[0].y); }
+        onUpdated: points => { if (points.length) touchWheel.move(points[0].x, points[0].y); }
+        onReleased: points => { if (points.length) touchWheel.release(points[0].x, points[0].y); }
+        onCanceled: touchWheel.cancel()
     }
     GridView {
-        anchors.fill: parent; visible: wheel.geometry.grid; clip: true
-        cellWidth: Math.max(96, width / Math.max(1, Math.floor(width / 112))); cellHeight: 104 * wheel.targetScale
-        model: visible ? wheel.actions : []; boundsBehavior: Flickable.StopAtBounds
+        anchors.fill: parent; visible: touchWheel.geometry.grid; clip: true
+        cellWidth: Math.max(96, width / Math.max(1, Math.floor(width / 112))); cellHeight: 104 * touchWheel.targetScale
+        model: visible ? touchWheel.actions : []; boundsBehavior: Flickable.StopAtBounds
         delegate: Item {
             required property int index
             required property var modelData
@@ -97,27 +97,27 @@ Item {
                 color: gridPointer.pressed ? Commons.Color.menu.selectedBackground : Commons.Color.menu.background
                 border.width: 1; border.color: Commons.Util.alpha(Commons.Color.menu.text, 0.35)
                 Accessible.role: Accessible.Button; Accessible.name: modelData.label
-                Accessible.onPressAction: wheel.activated(index)
+                Accessible.onPressAction: touchWheel.activated(index)
                 activeFocusOnTab: true
-                Keys.onReturnPressed: wheel.activated(index)
-                Keys.onSpacePressed: wheel.activated(index)
+                Keys.onReturnPressed: touchWheel.activated(index)
+                Keys.onSpacePressed: touchWheel.activated(index)
                 ActionIcon {
                     anchors.horizontalCenter: parent.horizontalCenter; y: 12
-                    width: 30 * wheel.targetScale; height: width
-                    name: modelData.icon; appSource: wheel.iconSources[index] || ""; ink: Commons.Color.menu.text
+                    width: 30 * touchWheel.targetScale; height: width
+                    name: modelData.icon; appSource: touchWheel.iconSources[index] || ""; ink: Commons.Color.menu.text
                 }
                 Text {
                     x: 4; width: parent.width - 8; anchors.bottom: parent.bottom; anchors.bottomMargin: 10
                     text: modelData.label; textFormat: Text.PlainText; elide: Text.ElideRight
-                    horizontalAlignment: Text.AlignHCenter; font.pixelSize: 12 * wheel.targetScale
+                    horizontalAlignment: Text.AlignHCenter; font.pixelSize: 12 * touchWheel.targetScale
                     font.family: Commons.Style.font.menuFamily; color: Commons.Color.menu.text
                 }
                 MouseArea {
                     id: gridPointer; anchors.fill: parent; acceptedButtons: Qt.LeftButton
                     property bool held: false
                     onPressed: held = false
-                    onPressAndHold: { held = true; wheel.edited(index); }
-                    onClicked: if (!held) wheel.activated(index)
+                    onPressAndHold: { held = true; touchWheel.edited(index); }
+                    onClicked: if (!held) touchWheel.activated(index)
                 }
             }
         }

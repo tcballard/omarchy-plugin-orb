@@ -8,6 +8,23 @@ Portable checks (Node 22+, Bash, jq, Lua 5.4 or texlua; no npm dependencies):
 
 This retains the starter identity/CI checks and adds geometry/config tests. On Omarchy, `./tests/native` also runs the installed manifest validator and Qt's QML parser. Parsing is not runtime verification.
 
+For v0.3.0, CI also runs Qt Quick Test with a real Qt event loop and explicit
+theme/UI stubs. It exercises mouse and synthetic touch sequences, grid fallback,
+hold-to-edit, cancellation, navigation, search, keyboard requests, window close
+confirmation and compact layouts:
+
+```bash
+QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software /usr/lib/qt6/bin/qmltestrunner -input tests/qml -import tests/qml/stubs
+```
+
+This needs Qt Quick, Controls, Templates, Window, Workerscript and QtTest QML
+modules. It does not load Quickshell, a real shell facade or a keyboard provider.
+The Button/TextField stubs represent only the host component API.
+`tests/touch.test.cjs` covers geometry, gesture state, legacy/concurrent settings,
+helper argument validation, stale resources, minimised-window restoration and
+enabled-provider discovery. Use the [native QA handoff](TOUCH.md#native-qa-handoff)
+for physical touch and iPad acceptance.
+
 Install from main with `omarchy plugin add https://github.com/tcballard/omarchy-plugin-orb.git --enable`. For a committed development checkout, use the supported local Git URL with `omarchy plugin add "$PWD" --enable --yes`. Normal updates use `omarchy plugin update io.github.tcballard.orb`; remove with `omarchy plugin remove io.github.tcballard.orb`. The compatibility `./install` and `./uninstall` wrappers only forward to the native manager. No post-install terminal command is needed.
 
 The current settings acceptance harness runs **only in an owned omadev nest**:

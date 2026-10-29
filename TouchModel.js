@@ -58,7 +58,7 @@ function windows(rows) {
         .map(function(w) { return { address: w.address, title: String(w.title || w.class || "Window").slice(0, 240),
             app: String(w.class || "").slice(0, 100), workspace: w.workspace && Number(w.workspace.id) || 0,
             workspaceName: String(w.workspace && w.workspace.name || "").slice(0, 80),
-            monitor: Number(w.monitor), hidden: w.hidden === true, order: Number(w.focusHistoryID) || 0 }; })
+            monitor: Number(w.monitor), hidden: w.hidden === true || (w.workspace && w.workspace.name === "special:minimized"), order: Number(w.focusHistoryID) || 0 }; })
         .sort(function(a, b) { return a.order - b.order; });
 }
 if (typeof module !== "undefined") module.exports = { active: active, output: output, layout: layout, hit: hit, press: press, move: move, release: release, windows: windows };

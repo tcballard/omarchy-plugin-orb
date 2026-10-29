@@ -75,7 +75,7 @@ TestCase {
     }
     function test_window_focus_and_busy_action() {
         tap("Windows"); tap("A real window");
-        compare(mockBackend.last.join("|"),"window|focus|0xabc"); verify(mockController.touchDismissAfter);
+        compare(mockBackend.last.join("|"),"window|focus|0xabc|eDP-1"); verify(mockController.touchDismissAfter);
         mockController.touchDismissAfter = false; mockBackend.busy = true;
         tap("A real window"); verify(!mockController.touchDismissAfter);
     }

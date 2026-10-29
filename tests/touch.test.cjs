@@ -108,6 +108,17 @@ test('an exit-zero compositor or shell refusal is still a failure',()=>fixture((
     write('plugins',[{id:'m44f4.omatouch',enabled:true}]);
     assert.equal(run(['keyboard','omatouch','show'],{ORB_REPLY:'unknown'}).json.ok,false);
 }));
+test('a minimized window restores onto the selected display before focus and stacking',()=>fixture(({run,write,log})=>{
+    write('clients',[{address:'0xabc',mapped:true,workspace:{name:'special:minimized'}}]);
+    write('monitors',[{name:'eDP-1',activeWorkspace:{id:3}},{name:'DP-1',activeWorkspace:{id:8}}]);
+    assert.equal(run(['window','focus','0xabc']).json.ok,false);
+    assert.equal(run(['window','focus','0xabc','missing']).json.ok,false);
+    assert.equal(fs.existsSync(log),false);
+    assert.equal(run(['window','focus','0xabc','eDP-1']).json.ok,true);
+    const calls=fs.readFileSync(log,'utf8').split('\0');
+    assert.match(calls[0],/window.move.*workspace = "3"/);
+    assert.match(calls[1],/dsp.focus/);assert.match(calls[2],/alter_zorder/);
+}));
 test('keyboard only invokes an enabled selected provider, and remaps above Orb before typing',()=>fixture(({run,write,log})=>{
     assert.equal(run(['keyboard','auto','show']).json.ok,false);
     write('plugins',[{id:'m44f4.omatouch',enabled:false}]);assert.equal(run(['keyboard','auto','show']).json.ok,false);

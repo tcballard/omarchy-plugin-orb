@@ -36,7 +36,7 @@ Item {
         if (shell) shell.summon(pluginId, JSON.stringify({ touch: true, output: output || "" }));
     }
     function saveTouchPosition(value) {
-        if (settingsSaving) return;
+        if (settingsSaving) { edgeHandle.livePosition = config.touchPosition; return; }
         saveOriginal = JSON.parse(JSON.stringify(config));
         saveDraft = Object.assign({}, saveOriginal, { touchPosition: value });
         settingsError = ""; settingsSaving = true; saveWatchdog.restart(); reloadForSave();
@@ -62,6 +62,7 @@ Item {
         }
     }
     TouchHandle {
+        id: edgeHandle
         handleEnabled: root.touchEnabled && !root.opened
         targetScreen: root.touchScreen
         edge: root.config.touchEdge || "right"
@@ -186,8 +187,9 @@ Item {
         try { if (String(payloadJson || "").length <= 4096) payload = JSON.parse(payloadJson || "{}"); } catch (error) {}
         if (!payload || typeof payload !== "object" || Array.isArray(payload)) payload = {};
         touchSession = !gesture && (payload.touch === true || (payload.desktop !== true && touchEnabled));
-        var requested = typeof payload.output === "string" ? TouchModel.output(payload.output, Quickshell.screens) : null;
-        var target = requested || touchScreen || Quickshell.screens.find(function(s) { return Hyprland.focusedMonitor && s.name === Hyprland.focusedMonitor.name; });
+        var target = typeof payload.output === "string" && payload.output ? TouchModel.output(payload.output, Quickshell.screens) : touchScreen;
+        var chooseTouchScreen = touchSession && !target;
+        if (chooseTouchScreen) touchSession = false;
         touchScreenName = touchSession && target ? target.name : "";
         touchHome.reset();
         touchBackend.error = ""; touchDismissAfter = false;
@@ -205,7 +207,14 @@ Item {
         opened = true;
         if (!gesture && !touchSession) { cursor.running = false; cursor.running = true; }
         if (touchSession) positioned = true;
-        Qt.callLater(function() { if (root.touchSession) touchHome.forceActiveFocus(); else keys.forceActiveFocus(); });
+        Qt.callLater(function() {
+            if (!root.opened) return;
+            if (chooseTouchScreen) {
+                root.activateHub(); settingsCard.selectTab(3);
+                root.settingsError = "Choose a connected touch display, then Save.";
+            } else if (root.touchSession) touchHome.forceActiveFocus();
+            else keys.forceActiveFocus();
+        });
     }
     function close() {
         opened = false; positioned = false; selected = -1; touchDismissAfter = false;
@@ -365,6 +374,10 @@ Item {
     }
     function failSettingsSave(message) {
         settingsSaving = false; settingsReloadPending = false; saveWatchdog.stop(); settingsError = message;
+        if (!settingsOpen) {
+            edgeHandle.livePosition = config.touchPosition === undefined ? 0.7 : config.touchPosition;
+            Quickshell.execDetached(["notify-send", "Orb", message]);
+        }
     }
     function finishSettingsSave() {
         if (!settingsSaving) return;

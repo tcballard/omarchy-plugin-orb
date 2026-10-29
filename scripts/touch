@@ -49,11 +49,25 @@ known_window() {
   local clients
   clients=$(json hyprctl -j clients) || fail 'Could not read windows.'
   jq -e --arg address "$1" 'any(.[]; .address == $address and .mapped != false)' <<<"$clients" >/dev/null || fail 'That window has already closed.'
+  window_workspace=$(jq -r --arg address "$1" '.[] | select(.address == $address) | .workspace.name // ""' <<<"$clients")
 }
 dispatch() {
   local reply
   reply=$(bounded hyprctl dispatch "$1") || fail 'Hyprland could not perform that action.'
   [[ $reply == ok ]] || fail 'Hyprland rejected that action.'
+}
+bring_forward() {
+  local address=$1 output=${2:-} monitors workspace
+  if [[ $window_workspace == special:minimized ]]; then
+    [[ -n $output ]] || fail 'Choose a display before restoring a minimized window.'
+    known_monitor "$output"
+    monitors=$(json hyprctl -j monitors) || fail 'Could not read displays.'
+    workspace=$(jq -r --arg name "$output" '.[] | select(.name == $name) | .activeWorkspace.id' <<<"$monitors")
+    [[ $workspace =~ ^[1-9][0-9]{0,8}$ ]] || fail 'The display has no available workspace.'
+    dispatch "hl.dsp.window.move({ workspace = \"$workspace\", window = \"address:$address\", follow = false })"
+  fi
+  dispatch "hl.dsp.focus({ window = \"address:$address\" })"
+  dispatch "hl.dsp.window.alter_zorder({ mode = \"top\", window = \"address:$address\" })"
 }
 
 command=${1:-status}; shift || true
@@ -92,9 +106,9 @@ window)
   [[ $# -ge 2 && $# -le 3 ]] || fail 'Choose a window action.'
   action=$1; address=$2; known_window "$address"
   case "$action" in
-  focus) dispatch "hl.dsp.focus({ window = \"address:$address\" })" ;;
+  focus) bring_forward "$address" "${3:-}" ;;
   close) dispatch "hl.dsp.window.close({ window = \"address:$address\" })" ;;
-  maximize) dispatch "hl.dsp.window.fullscreen({ mode = \"maximized\", window = \"address:$address\" })" ;;
+  maximize) bring_forward "$address" "${3:-}"; dispatch "hl.dsp.window.fullscreen({ mode = \"maximized\", window = \"address:$address\" })" ;;
   move)
     [[ ${3:-} =~ ^[1-9][0-9]{0,8}$ ]] || fail 'Choose a workspace.'
     spaces=$(json hyprctl -j workspaces) || fail 'Could not read workspaces.'

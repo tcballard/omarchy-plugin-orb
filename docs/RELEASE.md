@@ -1,9 +1,30 @@
 # Orb v0.3.0 development branch
 
-The `v0.3.0` branch prepares extra-button activation and a hold-and-release gesture. It is not a released version. The normal plugin install command still tracks `main`.
+The release branch combines touch navigation, provider integration, custom icons
+and the extra-button mouse gesture. The normal install command tracks `main`.
+The version is not tagged or published.
 
-The [v0.2.0 acceptance record](ACCEPTANCE.json) describes the previous candidate and does not establish acceptance of the new input path. Before release, run the portable suite, installed Omarchy manifest and QML checks, the isolated gesture test documented in [DEVELOPMENT.md](DEVELOPMENT.md), and real hardware checks including application focus, button conflicts, cancellation, submenu selection, monitor edges, reload and removal. Record the tested source SHA, shell/compositor versions and limitations.
+[Current acceptance](ACCEPTANCE.json) records the tested source and remaining
+gates. [v0.2.0 evidence](history/v0.2.0-ACCEPTANCE.json) is historical and does not
+establish acceptance for this candidate. Portable checks, QML parsing and Qt
+input tests with host stubs do not establish layer-shell focus, physical touch,
+real provider compatibility or iPad support.
 
-Physical multi-monitor, hotplug, fractional scaling and other architectures remain unverified. Do not publish a tag or update the marketplace snapshot on the basis of portable tests alone.
+Before tagging, run the native editor, gesture, upgrade and app-library checks
+in an owned Omadev nest, then the [touch QA handoff](TOUCH.md#native-qa-handoff)
+on target hardware. Record source SHA, shell/compositor versions, provider
+versions, architecture and display/scale/rotation details. Update acceptance
+only with observed results. Runtime changes invalidate earlier acceptance.
 
-Release notes are a [draft](RELEASE-NOTES.md). The previous release's [acceptance](history/v0.1.1-ACCEPTANCE.json), [release record](history/v0.1.1-RELEASE.md) and [notes](history/v0.1.1-RELEASE-NOTES.md) remain separately recorded.
+The inspected Omarchy lock screen has no on-screen keyboard. Secure login and
+unlock, suspend/resume, touch mapping and output selection must work before
+claiming a complete keyboard-free tablet session or proposing Orb as the
+official tablet default. Do not bypass authentication with a normal overlay.
+
+`scripts/archive.mjs` requires source-bound acceptance, a matching annotated tag
+and a clean checkout. Its existing pending-live override additionally requires
+explicit per-candidate release authorization; none is recorded for this work.
+Do not tag or update the marketplace snapshot from portable evidence alone.
+
+[Release notes](RELEASE-NOTES.md) remain a draft. The original published
+[v0.1.1 release record](history/v0.1.1-RELEASE.md) is retained separately.

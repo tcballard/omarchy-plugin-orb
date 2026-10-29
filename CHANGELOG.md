@@ -2,11 +2,18 @@
 
 ## 0.3.0 — in development
 
-- Choose from more icons or use a local image for custom commands and submenus.
+- Open a touch home from a movable edge button or optional Orb bar entry, on the selected display.
+- Use labelled radial favourites, left/right layouts, adjustable target sizes, hold-to-edit and optional drag selection; small views retain a scrollable grid of large targets.
+- Browse and search apps; switch, restore, maximise, move and confirm-close windows without keyboard shortcuts.
+- Control brightness, sound, playback, network and provider-backed rotation; open an enabled on-screen keyboard for Orb’s text fields.
+- Choose Desktop, persistent Touch, or sensor-backed Automatic mode. Preserve existing desktop configuration and custom actions.
+- Keep keyboard space available, remap the keyboard above reopened panels, and cancel stale or interrupted touch actions.
+
+- Choose from more icons or use a local image for custom commands and submenus, now with a file chooser and larger editor controls.
 
 - Use an optional extra mouse button to open Orb anywhere. Tap to keep the wheel open, or hold, move and release to launch a shortcut. Centre and outside releases cancel; submenus stay open for a second selection.
 - Configure the button in Opening with conflict checks and without taking over left, right or middle click. Thanks to Michal Mazurek for the original mouse-button contribution.
-- The gesture needs live Omarchy acceptance before release.
+- Touch and mouse gestures need live Omarchy acceptance before release. ARM64/iPad hardware and secure touch unlock are not yet verified.
 
 ## 0.2.0 — 2026-10-23
 

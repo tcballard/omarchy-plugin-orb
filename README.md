@@ -1,12 +1,12 @@
 <h1 align="center">Orb</h1>
 
-<p align="center">A shortcut wheel for Omarchy.</p>
+<p align="center">A shortcut wheel and touch home for Omarchy.</p>
 
 <p align="center"><a href="https://github.com/tcballard/omarchy-badges"><img alt="Built for Omarchy: Plugin" height="20" src="https://raw.githubusercontent.com/tcballard/omarchy-badges/75975e5b5bf75e7ede3764bcd2950046f7abfe2c/badges/v1/omarchy-plugin.svg"></a></p>
 
 Launch apps, switch themes and open your installed coding agents from a wheel near your pointer. Press **Super+Alt+O**, then click an icon or select it with the keyboard and press Enter. Choose five to eight shortcuts in Orb’s settings; the wheel follows your Omarchy shell theme.
 
-**For Omarchy Quattro.** This development branch prepares v0.3.0; the normal install command tracks `main`. The new mouse gesture still needs live Omarchy acceptance. [Install and update](#install) · [Previous release evidence](docs/ACCEPTANCE.json).
+**For Omarchy Quattro.** This development branch prepares v0.3.0; the normal install command tracks `main`. Touch navigation and the new mouse gesture still need live Omarchy acceptance. [Install and update](#install) · [Touch setup and QA](docs/TOUCH.md) · [Current evidence](docs/ACCEPTANCE.json).
 
 ![Orb with a five-section polygon and a circular centre](preview.png)
 
@@ -40,6 +40,18 @@ Disabling or removing Orb releases its runtime bindings; your Orb settings remai
 
 Requires Quattro with `PointerMoveGate`, the normal Omarchy launchers, Bash, Git, jq and libnotify. Orb includes compatibility for the Omarchy 4.0.6 shell's missing overlay, animation helper and menu app-library service. Node and a compiler are only development dependencies. The tested source and package scope is recorded in [acceptance evidence](docs/ACCEPTANCE.json).
 
+## Touch and tablet mode
+
+v0.3.0 adds a touch home with **Favourites, Apps, Windows and Controls**. Open Settings → **Touch**, choose **Touch**, select the display and Save. A movable Orb button appears on the chosen screen. You can also add Orb to your bar and tap it to open touch navigation on that bar’s display.
+
+- Tap a labelled favourite, hold it to edit, or enable drag selection. Choose a left/right edge fan or full wheel. Small viewports use a scrollable grid without shrinking targets.
+- Search installed apps, switch windows, restore minimised windows, maximise, move between existing workspaces and confirm before closing.
+- Adjust sound, playback and display brightness; open Omarchy’s Network panel. An enabled [Tablet Mode](https://github.com/andreiyurik/omarchy-tablet-mode) provides rotation controls.
+- Use an enabled [OmaTouch](https://github.com/M44F4/omatouch) keyboard with `wtype`, or a keyboard configured through Tablet Mode. Orb opens it for its own text fields and leaves space for typing. A keyboard button is always available.
+- **Automatic** follows Tablet Mode only when a working fold sensor explicitly reports a folded device. **Touch** is the persistent choice for an iPad or tablet without that sensor. Existing installations stay in Desktop mode until changed.
+
+Try the development branch using the [checkout instructions](docs/TOUCH.md#try-the-development-branch). This is not yet a claim of iPad hardware support or official Omarchy default status. Secure touch unlock needs support inside Omarchy’s lock screen; normal desktop keyboards cannot supply it.
+
 ## Use and configure
 
 - Optional **right-click on empty desktop** also opens Orb. This is enabled on this XPS; applications retain their context menus. Super+Alt+O remains available.
@@ -62,9 +74,9 @@ Requires Quattro with `PointerMoveGate`, the normal Omarchy launchers, Bash, Git
 
 ![Browse actions beside the wheel and assign them directly to slots](docs/v0.2.0-browser.png)
 
-Previous native captures and checks: [v0.2.0 acceptance evidence](docs/ACCEPTANCE.json). The v0.3.0 mouse gesture has not yet had live Omarchy acceptance. Earlier editor checks: [Catalog and size presets](docs/CATALOG-ACCEPTANCE.json) · [Settings](docs/SETTINGS-ACCEPTANCE.json).
+Previous native captures and checks: [v0.2.0 acceptance evidence](docs/history/v0.2.0-ACCEPTANCE.json). The v0.3.0 touch surfaces and mouse gesture have not yet had live Omarchy acceptance. Earlier editor checks: [Catalog and size presets](docs/CATALOG-ACCEPTANCE.json) · [Settings](docs/SETTINGS-ACCEPTANCE.json).
 
-Settings remain in `~/.config/omarchy/orb.json`, and can still be edited directly. See [the example](config.example.json). Five to eight top-level actions, one submenu level, the installed-agent menu (`"menu": "agents"`), Files locations (`"menu": "files"`), shape (`"circle"` or `"polygon"`), size, animation, shortcut, desktop activation and an optional extra mouse button are supported. The mouse button defaults to code 277 and stays off until enabled. The default diameter is 240 theme units. App choices store a `desktopId` and launch through Quattro’s app library; icons follow the installed application. Custom commands run as argument arrays without shell-string evaluation. Orb preserves unrelated settings and metadata on moved or edited actions, and rejects conflicting external edits. Invalid configuration retains the last valid actions and shows an error hint.
+Settings remain in `~/.config/omarchy/orb.json`, and can still be edited directly. See [the example](config.example.json). Five to eight top-level actions, one submenu level, the installed-agent menu (`"menu": "agents"`), Files locations (`"menu": "files"`), shape (`"circle"` or `"polygon"`), size, animation, shortcut, desktop activation and an optional extra mouse button are supported. Touch mode, output, keyboard provider, hand, target size and selection behaviour use the same validated configuration and Save/Cancel flow. The mouse button defaults to code 277 and stays off until enabled. The default diameter is 240 theme units. App choices store a `desktopId` and launch through Quattro’s app library; icons follow the installed application. Custom commands run as argument arrays without shell-string evaluation. Orb preserves unrelated settings and metadata on moved or edited actions, and rejects conflicting external edits. Invalid configuration retains the last valid actions and shows an error hint.
 
 Desktop right-click uses Hyprland’s auto-consuming binding: app, panel and widget clicks pass through. It replaces the wallpaper’s right-double-click theme gesture; Themes remains available as a shortcut. Conservative panel bounds, including the dock’s transparent area, are excluded. The optional extra mouse button is a separate global binding.
 
@@ -78,13 +90,13 @@ omarchy-shell io.github.tcballard.orb status
 
 Developed on a Dell XPS 9320. [Acceptance evidence](docs/ACCEPTANCE.json) separates portable checks, native tests in owned Omadev sessions and historical owner reports. It records the exact Omarchy source, display and installed package scope. [Development](docs/DEVELOPMENT.md) · [Architecture](ARCHITECTURE.md) · [Demo and recording](docs/DEMO.md).
 
-Five to eight configurable top-level entries with one submenu level. Agent discovery filters out first-run installer wrappers, requires a real installed executable, and does not alter the default agent. The new extra-button and gesture paths need live testing, including over applications. Multiple physical monitors, hotplug and fractional scaling need further live testing. Screenshot verification covers opening and cancelling the capture UI, not saving a capture. Historical theme checks use real shell palette-change IPC and restore it; full desktop/app retinting is not exercised. Historical physical-key and launcher checks remain separately recorded; nested tests do not recreate a complete historical Omarchy package installation.
+Five to eight configurable top-level entries with one submenu level. Agent discovery filters out first-run installer wrappers, requires a real installed executable, and does not alter the default agent. The new touch and extra-button gesture paths need live testing, including real touch input, keyboard layering and application focus. Multiple physical monitors, hotplug and fractional scaling need further live testing. Screenshot verification covers opening and cancelling the capture UI, not saving a capture. Historical theme checks use real shell palette-change IPC and restore it; full desktop/app retinting is not exercised. Historical physical-key and launcher checks remain separately recorded; nested tests do not recreate a complete historical Omarchy package installation.
 
 Codex, Claude and Grok use the product marks bundled with Omarchy’s agents panel, with contrasting variants for light and dark themes. [Asset provenance](CREDITS.md#agent-marks).
 
 The published v0.1.1 owner acceptance is retained in [the historical record](docs/history/v0.1.1-ACCEPTANCE.json). Marketplace snapshot updates require maintainer approval.
 
-Orb itself makes no network requests and requires no authentication. Applications and agents you launch can use their own network connections and accounts. Agent discovery reads installed executables and, when present, the local mise inventory; it does not install agents. Runtime helpers require the normal Omarchy launchers, Bash, jq and standard system utilities. The plugin reads the pointer position with `hyprctl` and starts the selected application or agent after dismissing the wheel.
+Orb itself makes no network requests and requires no authentication. Applications and agents you launch can use their own network connections and accounts. Agent discovery reads installed executables and, when present, the local mise inventory; it does not install agents. Runtime helpers require the normal Omarchy launchers, Bash, jq and standard system utilities. The desktop wheel reads the pointer position with `hyprctl`; touch navigation uses its selected display. Actions launch after Orb dismisses. Touch helpers make bounded local IPC calls to installed services. Automatic mode checks Tablet Mode every five seconds; window discovery runs only while a touch view or settings is open.
 
 Installation writes the plugin checkout through Omarchy and creates `~/.config/omarchy/orb.json` only if missing, plus an Orb setup lock. Fresh installations do not write Hyprland configuration files. Migration of the old installer removes only its unchanged module and exact owned include, with backups. The plugin manager records enablement in shell configuration. Removal retains Orb settings and migration backups. Runtime bindings are recreated after Hyprland reload; restarting the shell recovers them after a shell crash. Custom command arguments in `orb.json` are trusted local configuration.
 

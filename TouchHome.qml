@@ -137,12 +137,12 @@ FocusScope {
                         width: windowColumn.width; spacing: 6
                         TouchButton {
                             width: parent.width; text: modelData.title; leftAlign: true
-                            onClicked: home.action(["window", "focus", modelData.address], true)
+                            onClicked: home.action(["window", "focus", modelData.address, home.screenName], true)
                         }
                         EditorLabel { text: modelData.app + " · " + modelData.workspaceName + (modelData.hidden ? " · hidden" : ""); opacity: 0.65; width: parent.width; elide: Text.ElideRight }
                         Row {
                             width: parent.width; spacing: 6
-                            TouchButton { width: (parent.width - 12) / 3; text: "Maximise"; onClicked: home.action(["window", "maximize", modelData.address], true) }
+                            TouchButton { width: (parent.width - 12) / 3; text: "Maximise"; onClicked: home.action(["window", "maximize", modelData.address, home.screenName], true) }
                             TouchButton { width: (parent.width - 12) / 3; text: "Move"; onClicked: home.movingWindow = modelData.address }
                             TouchButton { width: (parent.width - 12) / 3; objectName: "orb-touch-close-" + modelData.address; text: home.pendingClose === modelData.address ? "Confirm close" : "Close"; onClicked: { if (home.pendingClose === modelData.address) home.action(["window", "close", modelData.address], false); else home.pendingClose = modelData.address; } }
                         }

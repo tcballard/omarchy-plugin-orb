@@ -58,7 +58,7 @@ PanelWindow {
     // Freeze the selected screen for this opening. A focus change must not
     // combine one screen's coordinates with another monitor's reserved area.
     onShownChanged: {
-        targetScreen = shown ? (requestedOutput() || (preferPointerScreen && screenAtPointer(openingPointer)) || focusedScreen()) : null;
+        targetScreen = shown ? (requestedScreen ? requestedOutput() : ((preferPointerScreen && screenAtPointer(openingPointer)) || focusedScreen())) : null;
         if (shown) Hyprland.refreshMonitors();
     }
     onDevicePixelRatioChanged: if (shown) Hyprland.refreshMonitors()
@@ -68,7 +68,7 @@ PanelWindow {
             if (window.shown && Quickshell.screens.indexOf(window.targetScreen) < 0) {
                 window.targetScreen = null;
                 Qt.callLater(function() {
-                    if (window.shown && !window.targetScreen) window.targetScreen = window.focusedScreen();
+                    if (window.shown && !window.targetScreen && !window.requestedScreen) window.targetScreen = window.focusedScreen();
                 });
             }
         }
