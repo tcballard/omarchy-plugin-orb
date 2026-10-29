@@ -3,6 +3,7 @@ Draft for Orb v0.3.0. Available on the development branch; not tagged or release
 Orb gains a touch home, named wheels and saved work setups for Omarchy.
 
 - Switch between named wheels with fixed shortcut positions; create, rename and manage them in Settings → Wheels.
+- Keep desktop Search and wheel switching attached to Orb; commit typed wheel names with Ctrl+S and retain clicks when leaving a name field.
 - Save app/workspace setups with normal tiling or equal columns, and split two touch-selected windows with ratios and side swapping.
 - Export/import wheels with bundled custom icons and an explicit command review. Search opens Oma-Cast.
 - Discover nine additional installed agents, retaining offline discovery and the existing default agent.

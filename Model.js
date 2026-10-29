@@ -318,15 +318,16 @@ function hit(x, y, diameter, count, shape) {
     var angle = (Math.atan2(dy, dx) * 180 / Math.PI + 90 + step / 2 + 360) % 360;
     return Math.floor(angle / step) % count;
 }
-function placement(px, py, width, height, reserved, preferred) {
+function placement(px, py, width, height, reserved, preferred, extraFooter) {
     var r = reserved || [0, 0, 0, 0], pad = 12, footer = 38;
+    var tools = Math.max(0, Number(extraFooter) || 0);
     var left = r[0] + pad, top = r[1] + pad;
     var availableW = Math.max(1, width - r[0] - r[2] - pad * 2);
     var availableH = Math.max(1, height - r[1] - r[3] - pad * 2);
-    var size = Math.max(1, Math.min(preferred, availableW, availableH - footer));
-    if (size > 280) size = Math.min(size, availableH / (1 + footer / 280));
+    var size = Math.max(1, Math.min(preferred, availableW, availableH - footer - tools));
+    if (size > 280) size = Math.min(size, (availableH - tools) / (1 + footer / 280));
     var captionScale = Math.max(1, size / 280);
-    footer *= captionScale;
+    footer = footer * captionScale + tools;
     return { size: size, captionScale: captionScale, footer: footer,
         x: Math.max(left, Math.min(px - size / 2, left + availableW - size)),
         y: Math.max(top, Math.min(py - size / 2, top + availableH - size - footer)) };

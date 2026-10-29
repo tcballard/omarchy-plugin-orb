@@ -160,7 +160,13 @@ FocusScope {
     function changeKey(value) {
         var tokens = shortcut.split("+"); tokens[tokens.length - 1] = value.toUpperCase().trim(); shortcut = tokens.join(" + ");
     }
-    function requestSave() { if (!busy && !shortcutCheck.error && !activationError && editingSlot < 0) saveRequested(); }
+    function requestSave() {
+        if (busy || shortcutCheck.error || activationError || editingSlot >= 0) return;
+        // Ctrl+S can arrive while a name field still owns focus. Finish its
+        // edit before the owner snapshots the draft, just as clicking Save does.
+        saveButton.forceActiveFocus();
+        saveRequested();
+    }
     function previewStatus() {
         var p = preview.mapToItem(panel, 0, 0);
         return { x: p.x, y: p.y, diameter: preview.width, shape: preview.shape, dragging: preview.dragging, selected: selectedSlot };
@@ -489,7 +495,7 @@ FocusScope {
         Row {
             visible: panel.editingSlot < 0; width: parent.width; spacing: Commons.Style.space(8)
             EditorButton { objectName: "orb-cancel"; width: (parent.width - parent.spacing) / 2; text: "Cancel"; enabled: !panel.busy; onClicked: panel.canceled() }
-            EditorButton { objectName: "orb-save"; width: (parent.width - parent.spacing) / 2; text: panel.busy ? "Saving…" : "Save"; selected: true; enabled: !panel.busy && !panel.shortcutCheck.error && !panel.activationError; onClicked: panel.requestSave() }
+            EditorButton { id: saveButton; objectName: "orb-save"; width: (parent.width - parent.spacing) / 2; text: panel.busy ? "Saving…" : "Save"; selected: true; enabled: !panel.busy && !panel.shortcutCheck.error && !panel.activationError; onClicked: panel.requestSave() }
         }
     }
     Connections {

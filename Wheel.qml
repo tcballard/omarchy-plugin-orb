@@ -423,6 +423,9 @@ Item {
             touchCapabilities: touchBackend.capabilities, keyboardSpace: touchBackend.keyboardSpace,
             keyboard: keyboardMode, x: wheel.x, y: wheel.y, diameter: wheel.width,
             iconsOnly: true, selectionCaption: hint.text,
+            activeWheel: config.activeWheel, wheelNames: (config.wheels || []).map(function(w) { return w.name; }),
+            desktopSearch: {x: wheel.x + desktopSearch.mapToItem(wheel,0,0).x, y: wheel.y + desktopSearch.mapToItem(wheel,0,0).y, width: desktopSearch.width, height: desktopSearch.height},
+            wheelChooser: {visible: wheelChooser.visible, x: wheelChooser.x, y: wheelChooser.y, width: wheelChooser.width, height: wheelChooser.height},
             captionFontSize: hint.font.pixelSize, footerHeight: panel.placement.footer,
             hubActive: hubActive,
             settingsOpen: settingsOpen, settingsSaving: settingsSaving, settingsError: settingsError,
@@ -637,7 +640,8 @@ Item {
         readonly property var monitorData: targetMonitor ? targetMonitor.lastIpcObject : ({})
         readonly property var placement: Model.placement(
             root.pointer.x - (monitorData.x || 0), root.pointer.y - (monitorData.y || 0),
-            width, height, monitorData.reserved || [0,0,0,0], Commons.Style.space(root.config.diameter))
+            width, height, monitorData.reserved || [0,0,0,0], Commons.Style.space(root.config.diameter),
+            (root.config.wheels || []).length > 1 && !root.submenuTitle ? 38 : 0)
 
         MouseArea {
             anchors.fill: parent
@@ -649,7 +653,9 @@ Item {
             anchors.fill: parent
             focus: root.opened
             Keys.onPressed: event => {
-                if (event.key === Qt.Key_Escape || event.key === Qt.Key_Backspace || (root.submenuTitle && event.key === Qt.Key_Left)) root.back();
+                if (event.key === Qt.Key_S && !root.submenuTitle) root.search();
+                else if (event.key === Qt.Key_W && wheelChooser.visible) { wheelChooser.forceActiveFocus(); wheelChooser.popup.open(); }
+                else if (event.key === Qt.Key_Escape || event.key === Qt.Key_Backspace || (root.submenuTitle && event.key === Qt.Key_Left)) root.back();
                 else if (event.key === Qt.Key_Home) { root.keyboardMode = true; root.selected = -2; moveGate.reset(); }
                 else if (event.key === Qt.Key_PageDown) root.turnPage(1);
                 else if (event.key === Qt.Key_PageUp) root.turnPage(-1);
@@ -771,13 +777,14 @@ Item {
             Rectangle {
                 anchors.top: parent.bottom; anchors.topMargin: 8 * wheel.captionScale
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: Math.min(wheel.width, hint.implicitWidth + (root.pageCount > 1 ? 72 : 24) * wheel.captionScale)
+                width: Math.min(wheel.width, hint.implicitWidth + (root.pageCount > 1 ? 102 : 54) * wheel.captionScale)
                 height: 28 * wheel.captionScale; radius: height / 2
                 color: Commons.Color.menu.background
                 border.width: 1; border.color: Commons.Util.alpha(Commons.Color.menu.text, 0.16)
                 Text {
-                    id: hint; anchors.centerIn: parent
-                    width: parent.width - (root.pageCount > 1 ? 64 : 20) * wheel.captionScale
+                    id: hint; anchors.verticalCenter: parent.verticalCenter
+                    x: (root.pageCount > 1 ? 32 : 10) * wheel.captionScale
+                    width: parent.width - (root.pageCount > 1 ? 94 : 50) * wheel.captionScale
                     horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
                     text: root.configError ? "Config error · using last valid actions"
                         : root.gesture && root.selected < 0 ? "Release to cancel · tap to open"
@@ -791,11 +798,23 @@ Item {
                     font.family: Commons.Style.font.menuFamily; font.pixelSize: Math.round(11 * wheel.captionScale)
                     color: root.configError ? Commons.Color.urgent : root.selected >= 0 ? Commons.Color.menu.text : Commons.Util.alpha(Commons.Color.menu.text, 0.7)
                 }
+                Button {
+                    id: desktopSearch
+                    objectName: "orb-desktop-search"
+                    anchors.right: parent.right
+                    width: 30 * wheel.captionScale; height: parent.height; radius: height / 2
+                    focusable: true
+                    Accessible.role: Accessible.Button
+                    Accessible.name: "Search with Oma-Cast"
+                    Accessible.onPressAction: clicked()
+                    onClicked: root.search()
+                    LineIcon { anchors.centerIn: parent; width: 14 * wheel.captionScale; height: width; name: "search"; ink: Commons.Color.menu.text }
+                }
                 Repeater {
                     model: root.pageCount > 1 ? 2 : 0
                     delegate: Item {
                         required property int index
-                        x: index === 0 ? 0 : parent.width - width
+                        x: index === 0 ? 0 : parent.width - width - desktopSearch.width
                         width: 32 * wheel.captionScale; height: parent.height
                         Text { anchors.centerIn: parent; text: index === 0 ? "‹" : "›"; font.pixelSize: Math.round(22 * wheel.captionScale); color: Commons.Color.menu.text }
                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.turnPage(index === 0 ? -1 : 1) }
@@ -803,18 +822,64 @@ Item {
                 }
             }
         }
-        Row {
-            visible: root.opened && !root.settingsOpen && !root.touchSession
-            x: 12; y: (panel.monitorData.reserved || [0,0,0,0])[1] + 12; spacing: 6; z: 2
-            Controls.ComboBox {
-                width: Math.min(200,panel.width - 110); height: 48
-                model: root.config.wheels || []; textRole: "name"
-                currentIndex: model.findIndex(function(w) { return w.id === root.config.activeWheel; })
-                enabled: !root.settingsSaving
-                Accessible.name: "Active Orb wheel"
-                onActivated: index => root.switchWheel(model[index].id)
+        Controls.ComboBox {
+            id: wheelChooser
+            objectName: "orb-desktop-wheel-chooser"
+            visible: root.opened && root.positioned && !root.settingsOpen && !root.touchSession
+                && !root.submenuTitle && !root.gesture && count > 1
+            opacity: panel.contentRevealed ? 1 : 0
+            x: wheel.x; y: wheel.y + wheel.height + 38 * wheel.captionScale
+            width: wheel.width; height: 32
+            z: 2
+            model: root.config.wheels || []; textRole: "name"
+            currentIndex: model.findIndex(function(w) { return w.id === root.config.activeWheel; })
+            enabled: !root.settingsSaving
+            Accessible.name: "Active Orb wheel"
+            onActivated: index => { root.switchWheel(model[index].id); keys.forceActiveFocus(); }
+            background: Rectangle {
+                radius: height / 2; color: Commons.Color.menu.background
+                border.width: 1
+                border.color: wheelChooser.activeFocus || wheelChooser.hovered ? Commons.Color.menu.selectedBorder : Commons.Util.alpha(Commons.Color.menu.text, 0.16)
             }
-            TouchButton { text: "Search"; onClicked: root.search() }
+            contentItem: Text {
+                leftPadding: 14; rightPadding: 30
+                text: wheelChooser.displayText; textFormat: Text.PlainText
+                verticalAlignment: Text.AlignVCenter; elide: Text.ElideRight
+                font.family: Commons.Style.font.menuFamily; font.pixelSize: 12
+                color: Commons.Color.menu.text
+            }
+            indicator: Text {
+                x: parent.width - width - 12; anchors.verticalCenter: parent.verticalCenter
+                text: "⌄"; color: Commons.Color.menu.text; font.pixelSize: 16
+            }
+            delegate: Controls.ItemDelegate {
+                required property var modelData
+                required property int index
+                width: wheelChooser.width; height: 36
+                highlighted: wheelChooser.highlightedIndex === index
+                contentItem: Text {
+                    text: modelData.name; textFormat: Text.PlainText; elide: Text.ElideRight
+                    verticalAlignment: Text.AlignVCenter
+                    color: Commons.Color.menu.text; font.family: Commons.Style.font.menuFamily; font.pixelSize: 12
+                }
+                background: Rectangle { color: parent.highlighted ? Commons.Color.menu.selectedBackground : "transparent"; radius: 8 }
+            }
+            popup: Controls.Popup {
+                y: wheelChooser.height + 4; width: wheelChooser.width
+                padding: 4
+                implicitHeight: Math.min(contentItem.implicitHeight + 8, 224)
+                background: Rectangle {
+                    radius: 12; color: Commons.Color.menu.background
+                    border.width: 1; border.color: Commons.Util.alpha(Commons.Color.menu.text, 0.2)
+                }
+                contentItem: ListView {
+                    clip: true; implicitHeight: contentHeight
+                    model: wheelChooser.popup.visible ? wheelChooser.delegateModel : null
+                    currentIndex: wheelChooser.highlightedIndex
+                    Controls.ScrollIndicator.vertical: Controls.ScrollIndicator { }
+                }
+                onClosed: if (root.opened && !root.settingsOpen) keys.forceActiveFocus()
+            }
         }
         EditorLabel {
             visible: root.opened && !root.settingsOpen && !root.touchSession && touchBackend.error !== ""

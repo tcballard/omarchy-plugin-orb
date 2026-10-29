@@ -28,4 +28,25 @@ TestCase {
         library.addSetup(); compare(library.setups.length,1); compare(library.setups[0].workspace,4);
         compare(library.setups[0].apps.join("|"),"org.test.One|org.test.Two"); compare(library.setups[0].layout,"columns"); compare(library.selectedApps.length,0);
     }
+    function test_rename_then_use_another_wheel() {
+        library.newName = "Media"; library.addWheel();
+        verify(waitForRendering(library));
+        var field = findChild(library,"orb-wheel-name-everyday"); verify(field);
+        mouseClick(field); field.selectAll(); keyClick(Qt.Key_C); keyClick(Qt.Key_O);
+        var row = findChild(library,"orb-wheel-name-" + library.wheels[1].id).parent;
+        mouseClick(row.children[0]);
+        compare(library.activeWheel,library.wheels[1].id);
+    }
+    function test_removing_a_wheel_retains_the_next_wheels_identity() {
+        library.newName = "Media"; library.addWheel();
+        library.newName = "Travel"; library.addWheel();
+        verify(waitForRendering(library));
+        var media = library.wheels[1].id, travel = library.wheels[2].id;
+        var mediaRow = findChild(library,"orb-wheel-name-" + media).parent.parent;
+        mouseClick(mediaRow.children[1].children[1]);
+        compare(library.wheels.length,2); verify(waitForRendering(library));
+        var travelName = findChild(library,"orb-wheel-name-" + travel); verify(travelName);
+        compare(travelName.text,"Travel"); mouseClick(travelName.parent.children[0]);
+        compare(library.activeWheel,travel);
+    }
 }

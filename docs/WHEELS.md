@@ -3,9 +3,12 @@
 In Settings → Wheels, duplicate the current wheel and name it Code, Everyday,
 Media, Travel or anything you prefer. Each wheel keeps five to eight fixed
 shortcut positions. Rename, import and remove wheels in the same draft, then
-Save. Shortcut edits belong to the wheel that was active when Settings opened.
+Save (or Ctrl+S, including a name still being edited). Shortcut edits belong to the wheel that was active when Settings opened.
 The wheel selector in desktop and touch views switches immediately and saves
-that choice. Up to sixteen wheels are supported. Existing configurations become
+that choice. On desktop it appears directly beneath Orb when there is more than
+one wheel; the Search icon is part of Orb’s caption. Press **W** to open the wheel
+selector or **S** to open Oma-Cast. Both controls follow the wheel and keep clear
+of reserved screen space. Up to sixteen wheels are supported. Existing configurations become
 Everyday in memory without rewriting unchanged settings.
 
 Search opens the enabled **typecraft.oma-cast** plugin. Orb's Apps page remains

@@ -49,10 +49,12 @@ Column {
     EditorLabel { text: "Named wheels"; font.pixelSize: 18 }
     EditorLabel { width: parent.width; wrapMode: Text.WordWrap; text: "Choose a wheel, then Save to switch. Shortcut edits are saved to the wheel you opened. Each layout keeps its own positions." }
     Repeater {
-        model: library.wheels
+        // Keep rows alive when a name is committed on focus loss. Replacing
+        // every delegate there can destroy the button receiving that focus.
+        model: library.wheels.length
         delegate: Column {
             required property int index
-            required property var modelData
+            readonly property var modelData: library.wheels[index]
             width: library.width; spacing: 5
             Row {
                 width: parent.width; spacing: 6

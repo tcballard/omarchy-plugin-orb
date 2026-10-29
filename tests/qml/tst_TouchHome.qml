@@ -83,6 +83,9 @@ TestCase {
     }
     function test_pair_ratio_and_swap() {
         tap("Windows"); home.choosePair("0xabc"); home.choosePair("0xdef");
+        // The newly visible Flow must be polished before its pointer targets
+        // are used. Qt 6.12 otherwise delivers this click at the previous frame.
+        verify(waitForRendering(home));
         tap("Split"); compare(mockBackend.last.join("|"),"pair|0xabc|0xdef|eDP-1|50");
         tap("Swap sides"); compare(mockBackend.last.join("|"),"pair|0xdef|0xabc|eDP-1|50");
         home.splitRatio = 30; home.applyPair(); compare(mockBackend.last[4],"30");

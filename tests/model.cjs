@@ -116,3 +116,16 @@ const concurrentlyEdited=clone(base);concurrentlyEdited.actions[1].label='Differ
 assert.match(model.mergeSettings(concurrentlyEdited,original,expandedDraft).error,/changed elsewhere/);
 assert.equal(model.mergeSettings(added.document,original,original).document.actions.length,8);
 console.log('PASS: 5–8 slots, radial hit regions, add/remove persistence, metadata preservation and structural conflicts');
+
+// The attached wheel chooser must remain inside the usable output at every edge.
+for (const [width,height] of [[1536,960],[600,800],[800,600]]) {
+  for (const diameter of [240,480,900]) {
+    for (const [x,y] of [[0,0],[width,0],[0,height],[width,height]]) {
+      const placed=model.placement(x,y,width,height,[0,26,0,20],diameter,38);
+      assert.ok(placed.x>=12 && placed.x+placed.size<=width-12);
+      assert.ok(placed.y>=38);
+      assert.ok(placed.y+placed.size+38*Math.max(1,placed.size/280)+38<=height-20-12+0.001);
+    }
+  }
+}
+console.log('PASS: attached wheel chooser clears reserved areas at all four edges');
