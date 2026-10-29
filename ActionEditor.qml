@@ -1,10 +1,22 @@
 import QtQuick
+import QtQuick.Dialogs as Dialogs
 import qs.Commons as Commons
 import qs.Ui
 import "Model.js" as Model
 
 FocusScope {
     id: editor
+    Dialogs.FileDialog {
+        id: iconDialog
+        title: "Choose a shortcut icon"
+        nameFilters: ["Images (*.svg *.png *.jpg *.jpeg *.webp)"]
+        onAccepted: {
+            var value = selectedFile.toString();
+            if (value.indexOf("file://") !== 0) return;
+            var path = decodeURIComponent(value.slice(7));
+            if (Model.validIcon(path)) { editor.customIconPath = path; editor.actionIcon = path; }
+        }
+    }
     property var choices: []
     property var initial: null
     property int depth: 0
@@ -130,12 +142,12 @@ FocusScope {
             }
             EditorLabel { text: "Icon" }
             Grid {
-                width: parent.width; columns: 7; spacing: Commons.Style.space(5)
+                width: parent.width; columns: Math.max(1, Math.min(7, Math.floor(width / 52))); spacing: Commons.Style.space(5)
                 Repeater {
                     model: Model.icons
                     delegate: EditorButton {
                         required property string modelData
-                        width: (content.width - parent.spacing * 6) / 7; height: Commons.Style.space(34)
+                        width: (content.width - parent.spacing * (parent.columns - 1)) / parent.columns; height: Math.max(48, Commons.Style.space(34))
                         tooltipText: modelData; selected: editor.actionIcon === modelData; enabled: !editor.busy
                         ActionIcon { anchors.centerIn: parent; width: Commons.Style.space(20); height: width; name: modelData; selected: editor.actionIcon === modelData }
                         onClicked: { editor.actionIcon = modelData; editor.customIconPath = ""; }
@@ -143,6 +155,7 @@ FocusScope {
                 }
             }
             EditorLabel { text: "Or use a local image" }
+            EditorButton { text: "Choose image…"; enabled: !editor.busy; onClicked: iconDialog.open() }
             Row {
                 width: parent.width; spacing: Commons.Style.space(6)
                 TextField {

@@ -6,14 +6,77 @@
   "animation": true,
   "shape": "circle",
   "actions": [
-    { "label": "Browser", "icon": "browser", "command": ["omarchy", "launch", "browser"] },
-    { "label": "Terminal", "icon": "terminal", "command": ["omarchy", "launch", "terminal"] },
-    { "label": "Files", "icon": "files", "menu": "files" },
-    { "label": "Screenshot", "icon": "screenshot", "command": ["omarchy", "capture", "screenshot"] },
-    { "label": "Settings", "icon": "settings", "children": [
-      { "label": "Themes", "icon": "themes", "command": ["omarchy-shell", "shell", "summon", "omarchy.image-picker", "{\"source\":\"themes\"}"] },
-      { "label": "Plugins", "icon": "plugins", "command": ["omarchy", "menu", "summon", "setup.plugin"] }
-    ] },
-    { "label": "Agents", "icon": "agents", "menu": "agents" }
-  ]
+    {
+      "label": "Browser",
+      "icon": "browser",
+      "command": [
+        "omarchy",
+        "launch",
+        "browser"
+      ]
+    },
+    {
+      "label": "Terminal",
+      "icon": "terminal",
+      "command": [
+        "omarchy",
+        "launch",
+        "terminal"
+      ]
+    },
+    {
+      "label": "Files",
+      "icon": "files",
+      "menu": "files"
+    },
+    {
+      "label": "Screenshot",
+      "icon": "screenshot",
+      "command": [
+        "omarchy",
+        "capture",
+        "screenshot"
+      ]
+    },
+    {
+      "label": "Settings",
+      "icon": "settings",
+      "children": [
+        {
+          "label": "Themes",
+          "icon": "themes",
+          "command": [
+            "omarchy-shell",
+            "shell",
+            "summon",
+            "omarchy.image-picker",
+            "{\"source\":\"themes\"}"
+          ]
+        },
+        {
+          "label": "Plugins",
+          "icon": "plugins",
+          "command": [
+            "omarchy",
+            "menu",
+            "summon",
+            "setup.plugin"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Agents",
+      "icon": "agents",
+      "menu": "agents"
+    }
+  ],
+  "inputMode": "desktop",
+  "touchEdge": "right",
+  "touchLayout": "fan",
+  "touchPosition": 0.7,
+  "touchScale": 1,
+  "touchOutput": "",
+  "touchKeyboard": "auto",
+  "touchDrag": false
 }

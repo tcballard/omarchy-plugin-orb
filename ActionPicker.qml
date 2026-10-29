@@ -90,7 +90,7 @@ FocusScope {
                 required property var modelData
                 objectName: picker.controlPrefix + "choice-" + index
                 x: scrollBar.mirrored ? scrollBar.width + Commons.Style.space(4) : 0
-                width: Math.max(0, list.width - scrollBar.width - Commons.Style.space(4)); height: Commons.Style.space(44)
+                width: Math.max(0, list.width - scrollBar.width - Commons.Style.space(4)); height: Math.max(48, Commons.Style.space(44))
                 text: modelData.title; leftAlign: true; leftPadding: Commons.Style.space(44)
                 selected: index === picker.cursor; enabled: !picker.busy
                 hasCursor: dragPointer.containsMouse

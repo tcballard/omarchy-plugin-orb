@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+fail() { jq -cn --arg error "$1" '{ok:false,error:$error}'; exit 1; }
+bounded() {
+  local data
+  data=$(timeout --kill-after=1 4 "$@" 2>/dev/null | head -c 1048577) || return 1
+  (( ${#data} <= 1048576 )) || return 1
+  printf '%s' "$data"
+}
+json() { local data; data=$(bounded "$@") && jq -ce . <<<"$data"; }
+done_ok() { printf '{"ok":true}\n'; }
+plugins() { json omarchy-shell shell listPlugins; }
+enabled() { jq -e --arg id "$1" 'any(.[]; .id == $id and .enabled == true)' <<<"$catalog" >/dev/null; }
+provider="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/andreiyurik.tablet-mode/bin/omarchy-tablet-mode"
+keyboard() {
+  local preference=$1 verb=$2 result
+  [[ $preference == auto || $preference == omatouch || $preference == tablet ]] || fail 'Unknown keyboard provider.'
+  [[ $verb == show || $verb == hide ]] || fail 'Unknown keyboard action.'
+  catalog=$(plugins) || fail 'Could not discover enabled plugins.'
+  if [[ $preference != tablet ]] && enabled m44f4.omatouch; then
+    command -v wtype >/dev/null || fail 'OmaTouch needs the wtype package.'
+    if [[ $verb == show ]]; then
+      bounded omarchy-shell shell hide m44f4.omatouch >/dev/null || fail 'Could not hide the keyboard before raising it.'
+      result=$(bounded omarchy-shell shell summon m44f4.omatouch '{}') || fail 'Could not show OmaTouch.'
+      [[ $result == ok ]] || fail 'OmaTouch is not available from the current bar.'
+    else
+      bounded omarchy-shell shell hide m44f4.omatouch >/dev/null || fail 'Could not hide OmaTouch.'
+    fi
+  elif [[ $preference != omatouch && -x $provider ]] && enabled andreiyurik.tablet-mode; then
+    local state
+    state=$(json "$provider" status) || fail 'Tablet Mode could not report its keyboard.'
+    jq -e '.keyboard | type == "string" and length > 0' <<<"$state" >/dev/null || fail 'Enable an on-screen keyboard for Tablet Mode first.'
+    if [[ $verb == show ]]; then bounded "$provider" keyboard hide >/dev/null || true; fi
+    bounded "$provider" keyboard "$verb" >/dev/null || fail 'Tablet Mode could not control its keyboard.'
+  else
+    fail 'Enable OmaTouch or a keyboard supported by Tablet Mode, then retry.'
+  fi
+  done_ok
+}
+known_monitor() {
+  [[ ${#1} -le 128 && -n $1 && $1 != *$'\n'* ]] || fail 'Choose a connected display.'
+  local monitors
+  monitors=$(json hyprctl -j monitors) || fail 'Could not read displays.'
+  jq -e --arg name "$1" 'any(.[]; .name == $name and .disabled != true)' <<<"$monitors" >/dev/null || fail 'The selected display is no longer connected.'
+}
+known_window() {
+  [[ $1 =~ ^0x[0-9a-fA-F]{1,16}$ ]] || fail 'Invalid window address.'
+  local clients
+  clients=$(json hyprctl -j clients) || fail 'Could not read windows.'
+  jq -e --arg address "$1" 'any(.[]; .address == $address and .mapped != false)' <<<"$clients" >/dev/null || fail 'That window has already closed.'
+}
+dispatch() {
+  local reply
+  reply=$(bounded hyprctl dispatch "$1") || fail 'Hyprland could not perform that action.'
+  [[ $reply == ok ]] || fail 'Hyprland rejected that action.'
+}
+
+command=${1:-status}; shift || true
+case "$command" in
+status|mode)
+  catalog=$(plugins) || fail 'Could not discover enabled plugins.'
+  tablet=false; state='{}'; tablet_error=''; keyboard_id=''; keyboard_ready=false
+  if enabled andreiyurik.tablet-mode && [[ -x $provider ]]; then
+    tablet=true
+    state=$(json "$provider" status) || { state='{}'; tablet_error='Tablet Mode status is unavailable.'; }
+  fi
+  if enabled m44f4.omatouch; then
+    keyboard_id=omatouch
+    if command -v wtype >/dev/null; then keyboard_ready=true; fi
+  elif [[ $tablet == true ]] && jq -e '.keyboard | type == "string" and length > 0' <<<"$state" >/dev/null; then
+    keyboard_id=tablet; keyboard_ready=true
+  fi
+  jq -cn --argjson tablet "$tablet" --argjson status "$state" --arg error "$tablet_error" \
+    --arg keyboard "$keyboard_id" --argjson keyboardReady "$keyboard_ready" \
+    --argjson audio "$(command -v wpctl >/dev/null && echo true || echo false)" \
+    --argjson media "$(command -v playerctl >/dev/null && echo true || echo false)" \
+    --argjson network "$(enabled omarchy.network && echo true || echo false)" \
+    --argjson brightness "$(command -v omarchy-brightness-display >/dev/null && echo true || echo false)" \
+    '{ok:true,tabletEnabled:$tablet,hasFoldSensor:($status.hasFoldSensor == true),
+      folded:(if ($status.folded|type)=="boolean" then $status.folded else null end),
+      rotationLocked:($status.locked == true),tabletError:$error,keyboard:$keyboard,
+      keyboardReady:$keyboardReady,audio:$audio,media:$media,network:$network,brightness:$brightness}'
+  ;;
+windows)
+  rows=$(json hyprctl -j clients) || fail 'Could not read windows.'
+  workspaces=$(json hyprctl -j workspaces) || fail 'Could not read workspaces.'
+  jq -cn --argjson rows "$rows" --argjson workspaces "$workspaces" '{ok:true,windows:$rows,workspaces:[$workspaces[]|select(.id > 0)|{id,name,monitor}]}'
+  ;;
+keyboard) [[ $# == 2 ]] || fail 'Choose a keyboard and action.'; keyboard "$1" "$2" ;;
+window)
+  [[ $# -ge 2 && $# -le 3 ]] || fail 'Choose a window action.'
+  action=$1; address=$2; known_window "$address"
+  case "$action" in
+  focus) dispatch "hl.dsp.focus({ window = \"address:$address\" })" ;;
+  close) dispatch "hl.dsp.window.close({ window = \"address:$address\" })" ;;
+  maximize) dispatch "hl.dsp.window.fullscreen({ mode = \"maximized\", window = \"address:$address\" })" ;;
+  move)
+    [[ ${3:-} =~ ^[1-9][0-9]{0,8}$ ]] || fail 'Choose a workspace.'
+    spaces=$(json hyprctl -j workspaces) || fail 'Could not read workspaces.'
+    jq -e --argjson id "$3" 'any(.[]; .id == $id)' <<<"$spaces" >/dev/null || fail 'That workspace is no longer available.'
+    dispatch "hl.dsp.window.move({ workspace = \"$3\", window = \"address:$address\", follow = false })"
+    ;;
+  *) fail 'Unknown window action.' ;;
+  esac
+  done_ok
+  ;;
+workspace)
+  [[ $# == 1 && $1 =~ ^[1-9][0-9]{0,8}$ ]] || fail 'Choose a workspace.'
+  spaces=$(json hyprctl -j workspaces) || fail 'Could not read workspaces.'
+  jq -e --argjson id "$1" 'any(.[]; .id == $id)' <<<"$spaces" >/dev/null || fail 'That workspace is no longer available.'
+  dispatch "hl.dsp.focus({ workspace = \"$1\" })"; done_ok
+  ;;
+volume)
+  [[ $# == 1 ]] || fail 'Choose a volume action.'
+  case $1 in
+  up) bounded wpctl set-volume --limit 1.0 @DEFAULT_AUDIO_SINK@ 5%+ >/dev/null ;;
+  down) bounded wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- >/dev/null ;;
+  mute) bounded wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle >/dev/null ;;
+  *) fail 'Unknown volume action.' ;;
+  esac || fail 'Audio is unavailable.'
+  done_ok
+  ;;
+brightness)
+  [[ $# == 2 ]] || fail 'Choose brightness and display.'
+  known_monitor "$2"
+  case $1 in up) step='+5%' ;; down) step='5%-' ;; *) fail 'Unknown brightness action.' ;; esac
+  bounded omarchy-brightness-display --monitor "$2" "$step" >/dev/null || fail 'Brightness is unavailable on this display.'
+  done_ok
+  ;;
+media)
+  [[ $# == 1 && $1 =~ ^(previous|play-pause|next)$ ]] || fail 'Unknown playback action.'
+  bounded playerctl "$1" >/dev/null || fail 'No active media player.'; done_ok
+  ;;
+rotation)
+  [[ $# == 1 ]] || fail 'Choose a rotation action.'
+  catalog=$(plugins) || fail 'Could not discover enabled plugins.'
+  enabled andreiyurik.tablet-mode && [[ -x $provider ]] || fail 'Enable Tablet Mode for rotation controls.'
+  case $1 in
+  lock) bounded "$provider" lock toggle >/dev/null ;;
+  left|right|normal) bounded "$provider" rotate "$1" >/dev/null ;;
+  *) fail 'Unknown rotation action.' ;;
+  esac || fail 'Could not change rotation.'
+  done_ok
+  ;;
+network)
+  catalog=$(plugins) || fail 'Could not discover enabled plugins.'
+  enabled omarchy.network || fail 'Add the Network panel to your bar first.'
+  reply=$(bounded omarchy-shell shell summon omarchy.network '{}') || fail 'Could not open Network.'
+  [[ $reply == ok ]] || fail 'Network is unavailable from the current bar.'; done_ok
+  ;;
+lock)
+  bounded omarchy-system-lock >/dev/null || fail 'The lock request failed.'; done_ok
+  ;;
+*) fail 'Unknown Orb touch operation.' ;;
+esac

@@ -10,6 +10,8 @@ PanelWindow {
     property bool shown: false
     property int shownKeyboardFocus: WlrKeyboardFocus.Exclusive
     property var targetScreen: null
+    property bool respectReserved: false
+    property string requestedScreen: ""
     property bool preferPointerScreen: false
     property point openingPointer: Qt.point(0, 0)
     readonly property var targetMonitor: {
@@ -21,12 +23,18 @@ PanelWindow {
     // Do not reveal an opening frame until fullscreen geometry and output
     // scale agree. Fractional scales are expressed in units of 1/120.
     readonly property bool contentReady: shown && backingWindowVisible && !!targetScreen
-        && width === targetScreen.width && height === targetScreen.height
+        && (respectReserved ? (width > 0 && height > 0 && width <= targetScreen.width && height <= targetScreen.height)
+            : width === targetScreen.width && height === targetScreen.height)
         && !!targetMonitor && Math.round(devicePixelRatio * 120) === Math.round(targetMonitor.scale * 120)
     property bool contentRevealed: false
     onContentReadyChanged: {
         contentRevealed = false;
         if (contentReady) Qt.callLater(function() { if (window.contentReady) window.contentRevealed = true; });
+    }
+    function requestedOutput() {
+        for (var i = 0; i < Quickshell.screens.length; i++)
+            if (Quickshell.screens[i].name === requestedScreen) return Quickshell.screens[i];
+        return null;
     }
     function focusedScreen() {
         var monitor = Hyprland.focusedMonitor, name = monitor ? String(monitor.name || "") : "";
@@ -50,7 +58,7 @@ PanelWindow {
     // Freeze the selected screen for this opening. A focus change must not
     // combine one screen's coordinates with another monitor's reserved area.
     onShownChanged: {
-        targetScreen = shown ? ((preferPointerScreen && screenAtPointer(openingPointer)) || focusedScreen()) : null;
+        targetScreen = shown ? (requestedOutput() || (preferPointerScreen && screenAtPointer(openingPointer)) || focusedScreen()) : null;
         if (shown) Hyprland.refreshMonitors();
     }
     onDevicePixelRatioChanged: if (shown) Hyprland.refreshMonitors()
@@ -69,7 +77,8 @@ PanelWindow {
     screen: targetScreen
     anchors { top: true; left: true; bottom: true; right: true }
     color: "transparent"
-    exclusionMode: ExclusionMode.Ignore
+    exclusionMode: respectReserved ? ExclusionMode.Normal : ExclusionMode.Ignore
+    exclusiveZone: 0
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: shown ? shownKeyboardFocus : WlrKeyboardFocus.None
     Binding { target: window.contentItem; property: "opacity"; value: window.contentRevealed ? 1 : 0 }

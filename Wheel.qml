@@ -9,6 +9,7 @@ import qs.Ui
 import "Model.js" as Model
 import "BindingLifecycle.js" as BindingLifecycle
 import "Gesture.js" as Gesture
+import "TouchModel.js" as TouchModel
 
 Item {
     id: root
@@ -17,6 +18,65 @@ Item {
     property var manifest: null
     property bool opened: false
     property bool positioned: false
+    property bool touchSession: false
+    property string touchScreenName: ""
+    property bool touchDismissAfter: false
+    property var saveOriginal: ({})
+    property var saveDraft: ({})
+    readonly property bool touchEnabled: TouchModel.active(config.inputMode, touchBackend.capabilities)
+    readonly property var touchScreen: TouchModel.output(config.touchOutput || "", Quickshell.screens)
+    readonly property var touchReserved: {
+        var monitors = Hyprland.monitors.values;
+        for (var i = 0; i < monitors.length; i++)
+            if (touchScreen && monitors[i].name === touchScreen.name) return monitors[i].lastIpcObject.reserved || [0,0,0,0];
+        return [0,0,0,0];
+    }
+    onTouchEnabledChanged: if (!touchEnabled && touchSession && config.inputMode === "auto") dismiss()
+    function openTouch(output) {
+        if (shell) shell.summon(pluginId, JSON.stringify({ touch: true, output: output || "" }));
+    }
+    function saveTouchPosition(value) {
+        if (settingsSaving) return;
+        saveOriginal = JSON.parse(JSON.stringify(config));
+        saveDraft = Object.assign({}, saveOriginal, { touchPosition: value });
+        settingsError = ""; settingsSaving = true; saveWatchdog.restart(); reloadForSave();
+    }
+    function editTouchSlot(index) {
+        submenuTitle = ""; agentMenu = false;
+        activateHub();
+        if (index >= 0) settingsCard.editSlot(index);
+    }
+    function launchDesktop(entry) {
+        if (!entry || !/^[A-Za-z0-9_.@+-]{1,255}$/.test(String(entry.id || ""))) return;
+        lastAction = appLibrary.entryName(entry); dismiss();
+        pendingDesktopId = String(entry.id); launchDelay.start();
+    }
+    TouchBackend {
+        id: touchBackend
+        mode: root.config.inputMode || "desktop"
+        viewOpen: root.opened && (root.touchSession || root.settingsOpen)
+        keyboardProvider: root.config.touchKeyboard || "auto"
+        onCompleted: (kind, success) => {
+            if (success && root.touchDismissAfter && kind !== "keyboard") root.dismiss();
+            root.touchDismissAfter = false;
+        }
+    }
+    TouchHandle {
+        handleEnabled: root.touchEnabled && !root.opened
+        targetScreen: root.touchScreen
+        edge: root.config.touchEdge || "right"
+        position: root.config.touchPosition === undefined ? 0.7 : root.config.touchPosition
+        targetScale: root.config.touchScale || 1
+        reserved: root.touchReserved
+        onSummoned: output => root.openTouch(output)
+        onRepositioned: value => root.saveTouchPosition(value)
+    }
+    Connections {
+        target: Quickshell
+        function onScreensChanged() {
+            if (root.touchSession && root.opened && !Quickshell.screens.some(function(s) { return s.name === root.touchScreenName; })) root.dismiss();
+        }
+    }
     property var gesture: null
     property bool gestureCentre: false
     property int selected: -1
@@ -122,7 +182,15 @@ Item {
 
     function open(payloadJson) {
         // Payloads deliberately cannot change commands or configuration paths.
-        try { JSON.parse(payloadJson || "{}"); } catch (error) {}
+        var payload = {};
+        try { if (String(payloadJson || "").length <= 4096) payload = JSON.parse(payloadJson || "{}"); } catch (error) {}
+        if (!payload || typeof payload !== "object" || Array.isArray(payload)) payload = {};
+        touchSession = !gesture && (payload.touch === true || (payload.desktop !== true && touchEnabled));
+        var requested = typeof payload.output === "string" ? TouchModel.output(payload.output, Quickshell.screens) : null;
+        var target = requested || touchScreen || Quickshell.screens.find(function(s) { return Hyprland.focusedMonitor && s.name === Hyprland.focusedMonitor.name; });
+        touchScreenName = touchSession && target ? target.name : "";
+        touchHome.reset();
+        touchBackend.error = ""; touchDismissAfter = false;
         launchDelay.stop(); pendingCommand = []; pendingDesktopId = "";
         if (settingsReloadPending) settingsSaving = false;
         settingsOpen = false; settingsReloadPending = false;
@@ -135,11 +203,12 @@ Item {
             cursor.running = false;
         }
         opened = true;
-        if (!gesture) { cursor.running = false; cursor.running = true; }
-        Qt.callLater(function() { keys.forceActiveFocus(); });
+        if (!gesture && !touchSession) { cursor.running = false; cursor.running = true; }
+        if (touchSession) positioned = true;
+        Qt.callLater(function() { if (root.touchSession) touchHome.forceActiveFocus(); else keys.forceActiveFocus(); });
     }
     function close() {
-        opened = false; positioned = false; selected = -1;
+        opened = false; positioned = false; selected = -1; touchDismissAfter = false;
         gesture = null; gestureCentre = false; gestureWatchdog.stop();
         if (settingsReloadPending) settingsSaving = false;
         settingsOpen = false; settingsReloadPending = false;
@@ -274,12 +343,14 @@ Item {
         if (settingsReloadPending) settingsSaving = false;
         settingsOpen = false; settingsReloadPending = false;
         selected = -2; keyboardMode = true; moveGate.reset();
-        keys.forceActiveFocus();
+        if (touchSession) touchHome.forceActiveFocus(); else keys.forceActiveFocus();
     }
     function saveSettings() {
         if (settingsSaving) return;
         settingsError = "";
-        var checked = Model.parse(JSON.stringify(settingsCard.draft()), null);
+        saveOriginal = settingsCard.original;
+        saveDraft = settingsCard.draft();
+        var checked = Model.parse(JSON.stringify(saveDraft), null);
         if (checked.error) { settingsError = checked.error; return; }
         settingsSaving = true; saveWatchdog.restart();
         if (checked.config.shortcut !== settingsCard.original.shortcut || checked.config.desktopRightClick !== settingsCard.original.desktopRightClick
@@ -310,6 +381,10 @@ Item {
     }
     function status() {
         return JSON.stringify({ opened: opened, positioned: positioned, selected: selected,
+            inputMode: config.inputMode, touchEnabled: touchEnabled, touchSession: touchSession,
+            touchScreen: touchScreenName, touchPage: touchHome.page,
+            touchReady: touchPanel.contentReady, touchError: touchBackend.error,
+            touchCapabilities: touchBackend.capabilities, keyboardSpace: touchBackend.keyboardSpace,
             keyboard: keyboardMode, x: wheel.x, y: wheel.y, diameter: wheel.width,
             iconsOnly: true, selectionCaption: hint.text,
             captionFontSize: hint.font.pixelSize, footerHeight: panel.placement.footer,
@@ -373,7 +448,7 @@ Item {
                     return;
                 }
                 var document = JSON.parse(text());
-                var merged = Model.mergeSettings(document, settingsCard.original, settingsCard.draft());
+                var merged = Model.mergeSettings(document, root.saveOriginal, root.saveDraft);
                 if (merged.error) {
                     root.failSettingsSave(merged.error); return;
                 }
@@ -460,6 +535,7 @@ Item {
         function onAppsChanged() {
             root.appRevision++;
             if (root.settingsOpen) settingsCard.choices = root.settingsChoices();
+            touchHome.refreshApps();
         }
     }
     Connections {
@@ -493,11 +569,30 @@ Item {
         function status(): string { return root.status(); }
     }
     OrbOverlay {
+        id: touchPanel
+        shown: root.opened && root.touchSession && !root.settingsOpen
+        requestedScreen: root.touchScreenName
+        respectReserved: true
+        shownKeyboardFocus: WlrKeyboardFocus.OnDemand
+        WlrLayershell.namespace: "omarchy-orb-touch"
+        TouchHome {
+            id: touchHome
+            x: Math.max(8, (parent.width - width) / 2); y: 8
+            width: Math.min(900, Math.max(1, parent.width - 16))
+            height: Math.max(1, parent.height - 16 - (touchBackend.keyboardSpace ? Math.min(330, parent.height * 0.42) : 0))
+            controller: root; backend: touchBackend; screenName: root.touchScreenName
+            onDismissed: root.dismiss()
+            onSettingsRequested: slot => root.editTouchSlot(slot)
+        }
+    }
+    OrbOverlay {
         id: panel
-        shown: root.opened
+        shown: root.opened && (!root.touchSession || root.settingsOpen)
+        requestedScreen: root.touchSession ? root.touchScreenName : ""
+        respectReserved: root.settingsOpen
         preferPointerScreen: !!root.gesture
         openingPointer: root.pointer
-        shownKeyboardFocus: root.opened ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+        shownKeyboardFocus: root.settingsOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.Exclusive
         WlrLayershell.namespace: "omarchy-plugin-orb"
         readonly property var monitorData: targetMonitor ? targetMonitor.lastIpcObject : ({})
         readonly property var placement: Model.placement(
@@ -672,18 +767,23 @@ Item {
             id: settingsCard
             version: root.manifest ? String(root.manifest.version || "") : ""
             visible: root.opened && root.positioned && root.settingsOpen
-            readonly property var reserved: panel.monitorData.reserved || [0, 0, 0, 0]
+            readonly property var reserved: panel.respectReserved ? [0, 0, 0, 0] : panel.monitorData.reserved || [0, 0, 0, 0]
             readonly property rect availableArea: Qt.rect(reserved[0] + 12, reserved[1] + 12,
                 Math.max(1, panel.width - reserved[0] - reserved[2] - 24),
-                Math.max(1, panel.height - reserved[1] - reserved[3] - 24))
+                Math.max(1, panel.height - reserved[1] - reserved[3] - 24 - (touchBackend.keyboardSpace ? Math.min(330, panel.height * 0.42) : 0)))
             width: Math.min(Commons.Style.space(680), availableArea.width)
             maximumHeight: availableArea.height
             x: Math.round(availableArea.x + (availableArea.width - width) / 2)
             y: Math.round(availableArea.y + (availableArea.height - height) / 2)
             appLibrary: root.appLibrary
             busy: root.settingsSaving
-            error: root.settingsError || root.setupError
+            error: root.settingsError || root.setupError || touchBackend.error
             setupFailed: root.setupError !== ""
+            touchFriendly: root.touchSession
+            touchStatus: touchBackend.capabilities
+            keyboardShown: touchBackend.keyboardSpace
+            onKeyboardRequested: touchBackend.keyboard(true)
+            onKeyboardToggled: touchBackend.keyboard(!touchBackend.keyboardSpace)
             onRetrySetup: root.requestSetup()
             onSaveRequested: root.saveSettings()
             onCanceled: root.cancelSettings()
