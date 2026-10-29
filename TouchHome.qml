@@ -13,12 +13,21 @@ FocusScope {
     property string movingWindow: ""
     property var appRows: []
     property string pendingClose: ""
+    property string pairFirst: ""
+    property string pairSecond: ""
+    property int splitRatio: 50
+    function choosePair(address) {
+        if (!pairFirst || pairSecond) { pairFirst = address; pairSecond = ""; }
+        else if (pairFirst !== address) pairSecond = address;
+    }
+    function applyPair() { if (pairFirst && pairSecond) action(["pair",pairFirst,pairSecond,screenName,String(splitRatio)],false); }
+
     readonly property var config: controller ? controller.config : ({})
     readonly property bool narrow: width < 560
     signal dismissed()
     signal settingsRequested(int slot)
 
-    function reset() { page = "home"; query = ""; movingWindow = ""; pendingClose = ""; refreshApps(); }
+    function reset() { pairFirst = ""; pairSecond = ""; splitRatio = 50; page = "home"; query = ""; movingWindow = ""; pendingClose = ""; refreshApps(); }
     function refreshApps() {
         if (!controller || !controller.appLibrary) { appRows = []; return; }
         appRows = controller.appLibrary.sortedEntries(query).slice(0, 1000);
@@ -54,6 +63,16 @@ FocusScope {
         }
         Row {
             width: parent.width; spacing: 6
+            Controls.ComboBox {
+                width: parent.width - 94; height: 48; textRole: "name"
+                model: home.config.wheels || []; currentIndex: model.findIndex(function(w) { return w.id === home.config.activeWheel; })
+                Accessible.name: "Active Orb wheel"
+                onActivated: index => home.controller.switchWheel(model[index].id)
+            }
+            TouchButton { width: 88; text: "Search"; onClicked: home.controller.search() }
+        }
+        Row {
+            width: parent.width; spacing: 6
             Repeater {
                 model: [{id:"home",name:"Favourites"},{id:"apps",name:"Apps"},{id:"windows",name:"Windows"},{id:"controls",name:"Controls"}]
                 delegate: TouchButton {
@@ -79,12 +98,9 @@ FocusScope {
         }
         Column {
             anchors.fill: parent; visible: home.page === "apps"; spacing: 8
-            EditorField {
-                id: search; width: parent.width; height: 50
-                objectName: "orb-touch-search"
-                placeholderText: "Find an app"; text: home.query
-                onTextEdited: home.query = text
-                onActiveFocusChanged: if (activeFocus && home.backend) home.backend.keyboard(true)
+            TouchButton {
+                id: search; objectName: "orb-touch-search"; width: parent.width; text: "Search with Oma-Cast"
+                onClicked: home.controller.search()
             }
             GridView {
                 id: apps
@@ -129,6 +145,17 @@ FocusScope {
                         }
                     }
                 }
+                EditorLabel { width: parent.width; wrapMode: Text.WordWrap; text: home.pairFirst ? home.pairSecond ? "Two windows selected. Choose a split, or swap sides." : "Choose a second window with Pair." : "Use Pair on two windows to arrange them side by side." }
+                Flow {
+                    width: parent.width; spacing: 6; visible: home.pairSecond !== ""
+                    Repeater {
+                        model: [30,40,50,60,70]
+                        delegate: TouchButton { required property int modelData; text: modelData + "/" + (100-modelData); selected: home.splitRatio === modelData; enabled: !home.backend.busy; onClicked: { home.splitRatio = modelData; home.applyPair(); } }
+                    }
+                    TouchButton { text: "Split"; enabled: !home.backend.busy; onClicked: home.applyPair() }
+                    TouchButton { text: "Swap sides"; enabled: !home.backend.busy; onClicked: { var previous = home.pairFirst; home.pairFirst = home.pairSecond; home.pairSecond = previous; home.applyPair(); } }
+                    TouchButton { text: "Clear pair"; onClicked: { home.pairFirst = ""; home.pairSecond = ""; } }
+                }
                 EditorLabel { visible: home.backend && !home.backend.windows.length; text: "No open windows"; width: parent.width }
                 Repeater {
                     model: home.backend ? home.backend.windows : []
@@ -140,6 +167,7 @@ FocusScope {
                             onClicked: home.action(["window", "focus", modelData.address, home.screenName], true)
                         }
                         EditorLabel { text: modelData.app + " · " + modelData.workspaceName + (modelData.hidden ? " · hidden" : ""); opacity: 0.65; width: parent.width; elide: Text.ElideRight }
+                        TouchButton { text: home.pairFirst === modelData.address ? "Left window" : home.pairSecond === modelData.address ? "Right window" : "Pair"; selected: home.pairFirst === modelData.address || home.pairSecond === modelData.address; enabled: !home.backend.busy; onClicked: home.choosePair(modelData.address) }
                         Row {
                             width: parent.width; spacing: 6
                             TouchButton { width: (parent.width - 12) / 3; text: "Maximise"; onClicked: home.action(["window", "maximize", modelData.address, home.screenName], true) }
@@ -156,6 +184,11 @@ FocusScope {
             clip: true; boundsBehavior: Flickable.StopAtBounds
             Column {
                 id: controlColumn; width: parent.width; spacing: 12
+                EditorLabel { text: "Work setups"; font.pixelSize: 18; visible: (home.config.setups || []).length > 0 }
+                Repeater {
+                    model: home.config.setups || []
+                    delegate: TouchButton { required property var modelData; width: controlColumn.width; text: modelData.name; enabled: !home.backend.busy; onClicked: home.controller.runSetup(modelData.id) }
+                }
                 EditorLabel { text: "Display"; font.pixelSize: 18 }
                 Row {
                     width: parent.width; spacing: 8

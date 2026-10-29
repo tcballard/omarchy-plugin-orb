@@ -77,6 +77,7 @@ function fixture(fn) {
     const put=(name,text)=>fs.writeFileSync(path.join(bin,name),text,{mode:0o755});
     put('omarchy-shell',`#!/usr/bin/env bash
 if [[ $* == 'shell listPlugins' ]]; then cat "$ORB_FIXTURE/plugins.json"
+elif [[ $1 == oma-cast && $2 == ping ]]; then echo ok
 elif [[ $1 == shell && $2 == summon ]]; then echo "\${ORB_REPLY:-ok}"
 fi
 printf '%s\\0' "$@" >> "$ORB_FIXTURE/calls"
@@ -130,4 +131,27 @@ test('keyboard only invokes an enabled selected provider, and remaps above Orb b
 test('missing and disabled tablet providers cannot turn on Automatic mode',()=>fixture(({run,write})=>{
     write('plugins',[{id:'andreiyurik.tablet-mode',enabled:false}]);
     const r=run(['status']);assert.equal(r.json.tabletEnabled,false);assert.equal(r.json.hasFoldSensor,false);assert.equal(r.json.folded,null);
+}));
+const monitor={name:'eDP-1',id:0,x:100,y:0,width:2000,height:1600,scale:2,transform:0,reserved:[0,20,0,0],activeWorkspace:{id:1}};
+test('Search hands off only to enabled Oma-Cast',()=>fixture(({run,write,log})=>{
+ assert.equal(run(['search']).json.ok,false);write('plugins',[{id:'typecraft.oma-cast',enabled:true}]);
+ assert.equal(run(['search']).json.ok,true);assert.match(fs.readFileSync(log,'utf8'),/oma-cast\x00ping\x00oma-cast\x00show/);
+}));
+test('pair placement respects scale, reserved areas, split ratio and live window identity',()=>fixture(({run,write,log})=>{
+ write('clients',[{address:'0xabc',mapped:true},{address:'0xdef',mapped:true}]);write('monitors',[monitor]);
+ for(const args of [['pair','0xabc','0xabc','eDP-1','50'],['pair','0xabc','0xdef','missing','50'],['pair','0xabc','0xdef','eDP-1','99'],['pair','0xabc','0x999','eDP-1','50']]) assert.equal(run(args).json.ok,false);
+ assert.equal(fs.existsSync(log),false);assert.equal(run(['pair','0xabc','0xdef','eDP-1','50']).json.ok,true);
+ let calls=fs.readFileSync(log,'utf8');assert.match(calls,/resize\(\{ x = 488, y = 764/);assert.match(calls,/move\(\{ x = 108, y = 28/);assert.match(calls,/move\(\{ x = 604, y = 28/);assert.match(calls,/float\(\{ action = "on"/);
+ fs.writeFileSync(log,'');write('monitors',[{...monitor,transform:1}]);assert.equal(run(['pair','0xdef','0xabc','eDP-1','30']).json.ok,true);
+ calls=fs.readFileSync(log,'utf8');assert.match(calls,/resize\(\{ x = 232, y = 964/);assert.match(calls,/focus.*address:0xdef/);
+}));
+test('saved setups validate all apps and workspace before launch, then apply literal launch rules',()=>fixture(({run,write,dir,log})=>{
+ const config=path.join(dir,'config','omarchy');fs.mkdirSync(config,{recursive:true});const data=path.join(dir,'data');fs.mkdirSync(path.join(data,'applications'),{recursive:true});
+ const setup={id:'code',name:'Code',workspace:1,layout:'columns',apps:['org.test.One','org.test.Two']};const save=()=>fs.writeFileSync(path.join(config,'orb.json'),JSON.stringify({setups:[setup]}));save();write('monitors',[monitor]);
+ const invoke=()=>run(['setup','code','eDP-1'],{XDG_DATA_HOME:data,XDG_DATA_DIRS:data});
+ fs.writeFileSync(path.join(data,'applications','org.test.One.desktop'),'');assert.equal(invoke().json.ok,false);assert.equal(fs.existsSync(log),false);
+ fs.writeFileSync(path.join(data,'applications','org.test.Two.desktop'),'');write('workspaces',[{id:1,monitor:'DP-1'}]);assert.equal(invoke().json.ok,false);assert.equal(fs.existsSync(log),false);
+ write('workspaces',[{id:1,monitor:'eDP-1'}]);assert.equal(invoke().json.ok,true);
+ const calls=fs.readFileSync(log,'utf8');assert.match(calls,/gtk-launch 'org.test.One.desktop'/);assert.match(calls,/workspace = "1 silent", monitor = "0", floating = true, size = \{ 488, 764 \}, move = \{ 8, 28 \}/);
+ fs.writeFileSync(log,'');setup.apps=['bad;command'];save();assert.equal(invoke().json.ok,false);assert.equal(fs.readFileSync(log,'utf8'),'');
 }));

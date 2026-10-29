@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls as Controls
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
@@ -32,6 +33,24 @@ Item {
         return [0,0,0,0];
     }
     onTouchEnabledChanged: if (!touchEnabled && touchSession && config.inputMode === "auto") dismiss()
+    readonly property string touchHelper: decodeURIComponent(Qt.resolvedUrl("scripts/touch").toString().replace(/^file:\/\//,""))
+    function selectedOutput() {
+        if (touchSession) return touchScreenName;
+        return panel.targetScreen ? panel.targetScreen.name : touchScreen ? touchScreen.name : "";
+    }
+    function switchWheel(id) {
+        if (settingsSaving || id === config.activeWheel) return;
+        saveOriginal = JSON.parse(JSON.stringify(config));
+        saveDraft = Object.assign({},saveOriginal,{activeWheel:id});
+        settingsError = ""; settingsSaving = true; saveWatchdog.restart(); reloadForSave();
+        submenuTitle = ""; agentMenu = false; selected = -1;
+    }
+    function search() {
+        if (touchBackend.run(["search"])) touchDismissAfter = true;
+    }
+    function runSetup(id) {
+        if (touchBackend.run(["setup",id,selectedOutput()])) touchDismissAfter = true;
+    }
     function openTouch(output) {
         if (shell) shell.summon(pluginId, JSON.stringify({ touch: true, output: output || "" }));
     }
@@ -290,7 +309,9 @@ Item {
         if (action.menu || action.children) {
             parentSelection = index; submenuTitle = action.label;
             agentMenu = action.menu === "agents";
-            submenuRows = action.menu === "files" ? Model.fileActions(decodeURIComponent(Qt.resolvedUrl("scripts/files").toString().replace(/^file:\/\//, ""))) : action.children || [];
+            submenuRows = action.menu === "setups" ? (config.setups || []).map(function(setup) {
+                return {label:setup.name.slice(0,20),icon:"app",command:["bash",root.touchHelper,"setup",setup.id,root.selectedOutput()]};
+            }) : action.menu === "files" ? Model.fileActions(decodeURIComponent(Qt.resolvedUrl("scripts/files").toString().replace(/^file:\/\//, ""))) : action.children || [];
             selected = -1; menuPage = 0; moveGate.reset();
             if (agentMenu) { agentError = ""; installedAgents = []; agents.running = true; }
             return;
@@ -316,6 +337,8 @@ Item {
         var builtins = Model.parse(defaults.text(), config).config.actions;
         builtins = builtins.concat(builtins[4].children || []);
         builtins.splice(4, 0, { label: "Postcard", icon: "postcard", command: ["omarchy-shell", "shell", "summon", "tahayvr.postcard", "{}"] });
+        builtins.push({label:"Search",icon:"search",command:["omarchy-shell","oma-cast","show"]});
+        builtins.push({label:"Work setups",icon:"app",menu:"setups"});
         builtins.push({ label: "Make something cool", icon: "create", children: [
             { label: "New theme", icon: "themes", command: ["omarchy", "agent", "prompt", "Make me a new Omarchy theme. Ask me what look or inspiration I have in mind, then build it following the Omarchy skill's theming guide and switch to it."] },
             { label: "New plugin", icon: "plugins", command: ["omarchy", "agent", "prompt", "Make me a new Omarchy shell plugin. Ask me what I'd like it to do, then build it following the Omarchy skill's plugin guide and enable it."] },
@@ -779,6 +802,24 @@ Item {
                     }
                 }
             }
+        }
+        Row {
+            visible: root.opened && !root.settingsOpen && !root.touchSession
+            x: 12; y: (panel.monitorData.reserved || [0,0,0,0])[1] + 12; spacing: 6; z: 2
+            Controls.ComboBox {
+                width: Math.min(200,panel.width - 110); height: 48
+                model: root.config.wheels || []; textRole: "name"
+                currentIndex: model.findIndex(function(w) { return w.id === root.config.activeWheel; })
+                enabled: !root.settingsSaving
+                Accessible.name: "Active Orb wheel"
+                onActivated: index => root.switchWheel(model[index].id)
+            }
+            TouchButton { text: "Search"; onClicked: root.search() }
+        }
+        EditorLabel {
+            visible: root.opened && !root.settingsOpen && !root.touchSession && touchBackend.error !== ""
+            x: 12; y: (panel.monitorData.reserved || [0,0,0,0])[1] + 66; width: Math.min(500,panel.width-24)
+            text: touchBackend.error; wrapMode: Text.WordWrap; z: 2
         }
         SettingsPanel {
             id: settingsCard

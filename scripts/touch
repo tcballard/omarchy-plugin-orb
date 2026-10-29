@@ -70,8 +70,78 @@ bring_forward() {
   dispatch "hl.dsp.window.alter_zorder({ mode = \"top\", window = \"address:$address\" })"
 }
 
+monitor_geometry() {
+  known_monitor "$1"
+  local data
+  data=$(json hyprctl -j monitors) || fail 'Could not read displays.'
+  read -r mx my mw mh ml mt mr mb monitor_id active_workspace < <(jq -r --arg name "$1" '.[]|select(.name==$name)|(.scale // 1) as $s|(.transform // 0) as $t|[.x,.y,((if ($t%2)==1 then .height else .width end)/$s|floor),((if ($t%2)==1 then .width else .height end)/$s|floor),(.reserved[0]//0),(.reserved[1]//0),(.reserved[2]//0),(.reserved[3]//0),.id,.activeWorkspace.id]|@tsv' <<<"$data")
+  for number in "$mx" "$my" "$mw" "$mh" "$ml" "$mt" "$mr" "$mb" "$monitor_id" "$active_workspace"; do
+    [[ $number =~ ^-?[0-9]{1,9}$ ]] || fail 'Display geometry is unavailable.'
+  done
+  gx=$((mx+ml+8)); gy=$((my+mt+8)); gw=$((mw-ml-mr-16)); gh=$((mh-mt-mb-16))
+  (( gw >= 240 && gh >= 160 && active_workspace > 0 )) || fail 'The display is too small or has no active workspace.'
+}
+place_window() {
+  local address=$1 x=$2 y=$3 w=$4 h=$5 workspace=$6
+  known_window "$address"
+  dispatch "hl.dsp.window.fullscreen({ mode = \"fullscreen\", action = \"unset\", window = \"address:$address\" })"
+  dispatch "hl.dsp.window.move({ workspace = \"$workspace\", follow = false, window = \"address:$address\" })"
+  dispatch "hl.dsp.window.float({ action = \"on\", window = \"address:$address\" })"
+  dispatch "hl.dsp.window.resize({ x = $w, y = $h, relative = false, window = \"address:$address\" })"
+  dispatch "hl.dsp.window.move({ x = $x, y = $y, relative = false, window = \"address:$address\" })"
+}
+
 command=${1:-status}; shift || true
 case "$command" in
+search)
+  catalog=$(plugins) || fail 'Could not discover enabled plugins.'
+  enabled typecraft.oma-cast || fail 'Enable Oma-Cast to use Search.'
+  reply=$(bounded omarchy-shell oma-cast ping) || fail 'Oma-Cast did not respond.'
+  [[ $reply == ok ]] || fail 'Oma-Cast is not ready.'
+  bounded omarchy-shell oma-cast show >/dev/null || fail 'Could not open Oma-Cast.'
+  done_ok
+  ;;
+pair)
+  [[ $# == 4 && $1 != "$2" && $4 =~ ^(30|40|50|60|70)$ ]] || fail 'Choose two different windows and a split ratio.'
+  first=$1; second=$2; ratio=$4
+  known_window "$first"; known_window "$second"; monitor_geometry "$3"
+  left=$(( (gw-8)*ratio/100 )); right=$((gw-8-left))
+  place_window "$first" "$gx" "$gy" "$left" "$gh" "$active_workspace"
+  place_window "$second" "$((gx+left+8))" "$gy" "$right" "$gh" "$active_workspace"
+  dispatch "hl.dsp.focus({ window = \"address:$first\" })"; done_ok
+  ;;
+setup)
+  [[ $# == 2 && $1 =~ ^[a-z0-9][a-z0-9_-]{0,47}$ ]] || fail 'Choose a saved work setup.'
+  config="${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/orb.json"
+  [[ -f $config && $(stat -Lc %s "$config") -le 1048576 ]] || fail 'Could not read Orb settings.'
+  setup=$(jq -ce --arg id "$1" '.setups[] | select(.id==$id)' "$config") || fail 'That work setup no longer exists.'
+  jq -e '(.workspace|type=="number" and floor==. and .>=1 and .<=9999) and (.layout=="tiled" or .layout=="columns") and (.apps|type=="array" and length>0 and length<=8 and all(.[];type=="string" and test("^[A-Za-z0-9_][A-Za-z0-9_.@+-]{0,254}$")))' <<<"$setup" >/dev/null || fail 'Invalid work setup.'
+  mapfile -t apps < <(jq -r '.apps[]' <<<"$setup")
+  IFS=: read -ra data_dirs <<<"${XDG_DATA_HOME:-$HOME/.local/share}:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+  for app in "${apps[@]}"; do
+    found=false
+    for dir in "${data_dirs[@]}"; do [[ ! -f $dir/applications/$app.desktop ]] || found=true; done
+    [[ $found == true ]] || fail "Missing installed app: $app"
+  done
+  monitor_geometry "$2"
+  ws=$(jq -r .workspace <<<"$setup"); layout=$(jq -r .layout <<<"$setup")
+  spaces=$(json hyprctl -j workspaces) || fail 'Could not read workspaces.'
+  jq -e --argjson id "$ws" --arg output "$2" 'all(.[]; .id!=$id or .monitor==$output)' <<<"$spaces" >/dev/null || fail 'That workspace belongs to another display.'
+  (( ${#apps[@]} <= gw/120 )) || [[ $layout == tiled ]] || fail 'Use fewer apps for columns on this display.'
+  dispatch "hl.dsp.focus({ monitor = $monitor_id })"
+  dispatch "hl.dsp.focus({ workspace = \"$ws\", on_current_monitor = true })"
+  index=0; count=${#apps[@]}
+  for app in "${apps[@]}"; do
+    rules="workspace = \"$ws silent\", monitor = \"$monitor_id\""
+    if [[ $layout == columns ]]; then
+      width=$(( (gw-8*(count-1))/count )); x=$((ml+8+index*(width+8))); y=$((mt+8))
+      rules+=", floating = true, size = { $width, $gh }, move = { $x, $y }"
+    fi
+    dispatch "hl.dsp.exec_cmd(\"setsid uwsm-app -- gtk-launch '$app.desktop'\", { $rules })"
+    index=$((index+1))
+  done
+  done_ok
+  ;;
 status|mode)
   catalog=$(plugins) || fail 'Could not discover enabled plugins.'
   tablet=false; state='{}'; tablet_error=''; keyboard_id=''; keyboard_ready=false

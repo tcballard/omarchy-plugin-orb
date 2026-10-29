@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+fail() { jq -cn --arg error "$1" '{ok:false,error:$error}'; exit 1; }
+verb=${1:-}; path=${2:-}; value=${3:-}
+[[ $path == /* && ${#path} -le 4096 && $path != *$'\n'* ]] || fail 'Choose an absolute file path.'
+work=$(mktemp -d); trap 'rm -rf -- "$work"' EXIT
+validate() {
+ jq -e '
+ def action($depth):
+   type=="object" and (.label|type=="string" and length>0 and length<=20) and (.icon|type=="string" and length<=4096) and
+   (if has("desktopId") then (.desktopId|type=="string" and test("^[A-Za-z0-9_][A-Za-z0-9_.@+-]{0,254}$")) and (has("command") or has("menu") or has("children")|not)
+    elif has("children") then $depth==0 and (.children|type=="array" and length>0 and length<=12 and all(.[];action(1))) and (has("command") or has("menu")|not)
+    elif has("menu") then $depth==0 and (.menu=="files" or .menu=="agents" or .menu=="setups") and (has("command")|not)
+    else (.command|type=="array" and length>0 and length<=32 and all(.[];type=="string" and length<=4096 and (contains("\u0000")|not))) and (.command[0]|length>0) end);
+ (.name|type=="string" and length>0 and length<=32) and (.actions|type=="array" and length>=5 and length<=8 and all(.[];action(0)))' "$1" >/dev/null
+}
+case $verb in
+export)
+ [[ ! -L $path && (! -e $path || -f $path) ]] || fail 'Choose a regular destination file.'
+ printf '%s' "$value" > "$work/wheel"
+ validate "$work/wheel" || fail 'Invalid wheel.'
+ jq '{format:"orb-wheel",version:1,wheel:.,assets:{}}' "$work/wheel" > "$work/package"
+ mapfile -t icons < <(jq -r '..|objects|.icon? // empty|select(startswith("/"))' "$work/wheel" | sort -u)
+ (( ${#icons[@]} <= 32 )) || fail 'A wheel can bundle at most 32 custom icons.'
+ for icon in "${icons[@]}"; do
+   [[ -f $icon && $(stat -Lc %s -- "$icon") -le 131072 ]] || fail 'Each custom icon must be a readable image below 128 KiB.'
+   ext=${icon##*.}; ext=${ext,,}; [[ $ext =~ ^(svg|png|jpg|jpeg|webp)$ ]] || fail 'Unsupported icon format.'
+   mime=$(file -Lb --mime-type -- "$icon"); [[ $mime == image/* ]] || fail 'A custom icon is not an image.'
+   key="$(sha256sum -- "$icon" | cut -c1-64).$ext"
+   base64 -w0 -- "$icon" > "$work/base64"
+   jq --arg old "$icon" --arg key "$key" --rawfile data "$work/base64" '.assets[$key]=$data | .wheel |= walk(if type=="object" and .icon?==$old then .icon="orb-asset:"+$key else . end)' "$work/package" > "$work/next"
+   mv -- "$work/next" "$work/package"
+ done
+ # Export only the reviewed action schema, including literal command arguments.
+ jq 'def clean: {label,icon} + (if has("desktopId") then {desktopId} elif has("children") then {children:(.children|map(clean))} elif has("menu") then {menu} else {command} end); .wheel |= {name,actions:(.actions|map(clean))}' "$work/package" > "$work/next"
+ temp=$(mktemp -- "$(dirname -- "$path")/.orb-export.XXXXXX") || fail 'Destination is not writable.'
+ if ! cp -- "$work/next" "$temp" || ! mv -T -- "$temp" "$path"; then rm -f -- "$temp"; fail 'Could not export the wheel.'; fi
+ printf '{"ok":true}\n'
+ ;;
+preview|import)
+ [[ -f $path && $(stat -Lc %s -- "$path") -le 8388608 ]] || fail 'Choose an Orb wheel below 8 MiB.'
+ head -c 8388609 -- "$path" > "$work/package"
+ [[ $(stat -c %s "$work/package") -le 8388608 ]] || fail 'Wheel file grew while reading.'
+ digest=$(sha256sum "$work/package" | cut -c1-64)
+ [[ $verb != import || $digest == "$value" ]] || fail 'The file changed after review. Open it again.'
+ jq -e '.format=="orb-wheel" and .version==1 and (.assets|type=="object" and length<=32)' "$work/package" >/dev/null || fail 'Unsupported wheel package.'
+ jq .wheel "$work/package" > "$work/wheel"; validate "$work/wheel" || fail 'Invalid wheel actions.'
+ jq -e '[.wheel|..|objects|.icon? // empty] | all(.[]; test("^[a-z][a-z-]*$") or test("^orb-asset:[a-f0-9]{64}\\.(svg|png|jpg|jpeg|webp)$"))' "$work/package" >/dev/null || fail 'Imported icons must be bundled images or built-in names.'
+ jq -e '[.wheel|..|objects|.icon? // empty|select(startswith("orb-asset:"))|ltrimstr("orb-asset:")] as $refs | .assets as $assets | all($refs[]; $assets[.] != null)' "$work/package" >/dev/null || fail 'A bundled icon is missing.'
+ data_dir="${XDG_DATA_HOME:-$HOME/.local/share}/omarchy/orb/icons"
+ mapfile -t keys < <(jq -r '.assets|keys[]' "$work/package")
+ for key in "${keys[@]}"; do
+   [[ $key =~ ^[a-f0-9]{64}\.(svg|png|jpg|jpeg|webp)$ ]] || fail 'Invalid bundled icon name.'
+   jq -er --arg key "$key" '.assets[$key]|select(type=="string" and length<=174764)' "$work/package" | base64 -d > "$work/icon" || fail 'Invalid bundled icon.'
+   [[ $(stat -c %s "$work/icon") -le 131072 && $(sha256sum "$work/icon" | cut -c1-64) == "${key%%.*}" ]] || fail 'Icon checksum mismatch.'
+   mime=$(file -Lb --mime-type "$work/icon"); [[ $mime == image/* ]] || fail 'Bundled icon is not an image.'
+   if [[ $verb == import ]]; then
+     mkdir -p -- "$data_dir"; [[ ! -L $data_dir/$key ]] || fail 'Icon destination is a symbolic link.'
+     if [[ -e $data_dir/$key ]]; then
+       [[ -f $data_dir/$key && $(sha256sum -- "$data_dir/$key" | cut -c1-64) == "${key%%.*}" ]] || fail 'Stored icon checksum mismatch.'
+     else install -m600 -- "$work/icon" "$data_dir/$key"; fi
+   fi
+ done
+ jq --arg dir "$data_dir" --arg digest "$digest" '{ok:true,digest:$digest,wheel:(.wheel|walk(if type=="object" and (.icon? // ""|startswith("orb-asset:")) then .icon=$dir+"/"+(.icon|ltrimstr("orb-asset:")) else . end))}' "$work/package"
+ ;;
+*) fail 'Unknown wheel transfer operation.' ;;
+esac

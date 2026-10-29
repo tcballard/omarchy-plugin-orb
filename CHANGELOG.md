@@ -2,9 +2,15 @@
 
 ## 0.3.0 — in development
 
+- Switch between named wheels with fixed shortcut positions; create, rename and manage them in Settings → Wheels.
+- Save app/workspace setups with normal tiling or equal columns, and split two touch-selected windows with ratios and side swapping.
+- Export/import wheels with bundled custom icons and an explicit command review. Search opens Oma-Cast.
+- Discover nine additional installed agents, retaining offline discovery and the existing default agent.
+- Cover overlay output selection, deferred reveal, close races, reserved geometry and hotplug with regression tests.
+
 - Open a touch home from a movable edge button or optional Orb bar entry, on the selected display.
 - Use labelled radial favourites, left/right layouts, adjustable target sizes, hold-to-edit and optional drag selection; small views retain a scrollable grid of large targets.
-- Browse and search apps; switch, restore, maximise, move and confirm-close windows without keyboard shortcuts.
+- Browse apps and open Oma-Cast search; switch, restore, maximise, move and confirm-close windows without keyboard shortcuts.
 - Control brightness, sound, playback, network and provider-backed rotation; open an enabled on-screen keyboard for Orb’s text fields.
 - Choose Desktop, persistent Touch, or sensor-backed Automatic mode. Preserve existing desktop configuration and custom actions.
 - Keep keyboard space available, remap the keyboard above reopened panels, and cancel stale or interrupted touch actions.

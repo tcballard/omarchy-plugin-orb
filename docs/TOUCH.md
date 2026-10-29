@@ -114,7 +114,7 @@ Omarchy integration. Repeat touch-specific checks on physical hardware.
 3. With actual touch, tap every favourite, cancel drags, long-press to edit, enter
    a submenu, change page, use Back and dismiss. Check both hands, ring/fan,
    5–8 favourites, large targets, portrait/landscape and the compact grid.
-4. With OmaTouch and then the Tablet Mode keyboard, search and launch an app;
+4. With OmaTouch and then the Tablet Mode keyboard, open Oma-Cast Search and launch an app;
    edit a command and submenu using the image chooser; Save/Cancel/reopen.
    Confirm the keyboard stays above Orb after changing panels, text reaches the
    intended field and controls remain reachable. Repeat after provider loss and
@@ -158,3 +158,5 @@ touchscreen or a disconnected mouse. Gate rollout on secure login/unlock,
 suspend/resume, accessible input, output mapping, provider recovery, battery/idle
 observations and a documented route back to Desktop. This plugin release does
 not change the upstream installer or global default.
+
+Named wheels, saved setups, import/export and touch window pairs have a separate [operation and acceptance checklist](WHEELS.md).
