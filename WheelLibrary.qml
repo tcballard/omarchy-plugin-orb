@@ -57,7 +57,7 @@ Column {
             Row {
                 width: parent.width; spacing: 6
                 EditorButton { width: 76; text: library.activeWheel === modelData.id ? "Selected" : "Use"; selected: library.activeWheel === modelData.id; enabled: !library.busy; onClicked: library.activeWheel = modelData.id }
-                EditorField { width: parent.width - 82; text: modelData.name; maximumLength: 32; enabled: !library.busy; onTextEdited: library.rename(index,text) }
+                EditorField { objectName: "orb-wheel-name-" + modelData.id; width: parent.width - 82; text: modelData.name; maximumLength: 32; enabled: !library.busy; onEditingFinished: if (text !== modelData.name) library.rename(index,text) }
             }
             Row {
                 spacing: 6

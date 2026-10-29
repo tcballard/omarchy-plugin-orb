@@ -16,6 +16,13 @@ TestCase {
         compare(library.activeWheel,"everyday"); compare(library.wheels[1].name,"Code");
         library.rename(1,"Travel"); compare(library.wheels[1].name,"Travel"); compare(library.wheels[0].name,"Everyday");
     }
+    function test_rename_keeps_focus_until_commit() {
+        var field = findChild(library,"orb-wheel-name-everyday"); verify(field);
+        mouseClick(field); field.selectAll(); keyClick(Qt.Key_C); verify(field.activeFocus);
+        keyClick(Qt.Key_O); verify(field.activeFocus); compare(field.text.toLowerCase(),"co");
+        compare(library.wheels[0].name,"Everyday"); library.forceActiveFocus();
+        tryCompare(library,"activeFocus",true); compare(library.wheels[0].name.toLowerCase(),"co");
+    }
     function test_setup_retains_app_order_and_layout() {
         library.setupName = "Work"; library.selectedApps = ["org.test.One","org.test.Two"]; library.workspace = 4; library.layout = "columns";
         library.addSetup(); compare(library.setups.length,1); compare(library.setups[0].workspace,4);

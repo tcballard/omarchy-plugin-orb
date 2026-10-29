@@ -46,10 +46,10 @@ Item {
         submenuTitle = ""; agentMenu = false; selected = -1;
     }
     function search() {
-        if (touchBackend.run(["search"])) touchDismissAfter = true;
+        launchAction(["bash",touchHelper,"search"],"Search");
     }
     function runSetup(id) {
-        if (touchBackend.run(["setup",id,selectedOutput()])) touchDismissAfter = true;
+        launchAction(["bash",touchHelper,"setup",id,selectedOutput()],"Work setup");
     }
     function openTouch(output) {
         if (shell) shell.summon(pluginId, JSON.stringify({ touch: true, output: output || "" }));
