@@ -106,15 +106,16 @@ Item {
                 message = String(result.error || message).slice(0, 250);
             } catch (e) {}
             if (timedOut) { ok = false; message = "The action timed out. Retry when the service responds."; }
-            if (backend.requestGeneration !== backend.generation) return;
-            if (!ok) backend.error = message;
-            if (ok && backend.requestKind === "keyboard") backend.keyboardSpace = backend.current[2] === "show";
-            backend.completed(backend.requestKind, ok);
-            if (ok) { backend.refresh(); backend.refreshWindows(); }
+            if (backend.requestGeneration === backend.generation) {
+                if (!ok) backend.error = message;
+                if (ok && backend.requestKind === "keyboard") backend.keyboardSpace = backend.current[2] === "show";
+                backend.completed(backend.requestKind, ok);
+                if (ok) { backend.refresh(); backend.refreshWindows(); }
+            }
             if (backend.pendingKeyboard && backend.viewOpen) {
-                var show = backend.pendingKeyboard === "show";
+                var show = backend.pendingKeyboard === "show", ticket = backend.generation;
                 backend.pendingKeyboard = "";
-                Qt.callLater(function() { if (backend.viewOpen) backend.keyboard(show, true); });
+                Qt.callLater(function() { if (backend.viewOpen && backend.generation === ticket) backend.keyboard(show, true); });
             }
         }
     }
