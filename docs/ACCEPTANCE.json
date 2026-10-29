@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "status": "pending-live",
   "version": "0.3.0",
-  "input_commit": "e72ab5bda13d7e5695b2cafd0c7901465c351c5d",
+  "input_commit": "c2288b375543b19dfd8f45f88880f53e5f183736",
   "date": "2026-10-29",
   "platform": "Remote Linux x86_64 workspace and GitHub Actions Ubuntu 24.04; no live Omarchy, physical tablet or ARM64 session",
   "commands": [
@@ -17,16 +17,16 @@
     {
       "name": "Portable tests",
       "pass": true,
-      "source": "e72ab5bda13d7e5695b2cafd0c7901465c351c5d",
+      "source": "c2288b375543b19dfd8f45f88880f53e5f183736",
       "checks": [
-        "53 Node tests plus geometry/configuration/editor assertions, Bash syntax and Lua fixture checks pass.",
-        "11 touch tests cover mode/output choice, target geometry, cancellation, settings migration/conflicts, bounded literal IPC, stale targets, provider selection and minimised-window restoration."
+        "75 Node tests plus geometry/configuration/editor assertions, Bash syntax and Lua fixture checks pass.",
+        "Named-wheel switching/metadata/conflicts; reviewed icon import/export; saved app launches; pair geometry and stale resources; Oma-Cast handoff; all 24 installed-agent entry points; nine overlay lifecycle regression groups."
       ]
     },
     {
       "name": "QML parsing",
       "pass": true,
-      "source": "e72ab5bda13d7e5695b2cafd0c7901465c351c5d",
+      "source": "c2288b375543b19dfd8f45f88880f53e5f183736",
       "checks": [
         "All root QML files parse with the Qt parser in GitHub Actions."
       ]
@@ -34,17 +34,19 @@
     {
       "name": "Qt event tests with theme/UI stubs",
       "pass": true,
-      "source": "e72ab5bda13d7e5695b2cafd0c7901465c351c5d",
+      "source": "c2288b375543b19dfd8f45f88880f53e5f183736",
       "checks": [
+        "20 Qt checks pass, including setup/cleanup cases.",
         "TouchWheel: pointer/raw-touch tap, opt-in drag, cancel, hold-to-edit, rotation cancellation and compact grid.",
-        "TouchHome: navigation/search, keyboard requests, confirmed close, focus/busy actions and a small viewport."
+        "TouchHome: navigation, Oma-Cast request, keyboard, confirmed close, focus/busy actions, split/swap and compact viewport.",
+        "WheelLibrary: duplicate/rename drafts, retained typing focus, app order/workspace/layout. Transfer processes are stubbed in Qt and tested separately as portable helpers."
       ],
       "scope": "Qt offscreen/software event delivery with host component stubs; not physical touch or Omarchy acceptance."
     },
     {
       "name": "Manifest and publish-surface validation",
       "pass": true,
-      "source": "e72ab5bda13d7e5695b2cafd0c7901465c351c5d",
+      "source": "c2288b375543b19dfd8f45f88880f53e5f183736",
       "checks": [
         "Strict structural/publish checks pass with no structural errors or warnings.",
         "Advisory capability flags remain for local processes/collected output, installers, authoring files and CI package installation. These are not a security audit."
@@ -53,7 +55,7 @@
     {
       "name": "Static release preflight",
       "pass": true,
-      "source": "e72ab5bda13d7e5695b2cafd0c7901465c351c5d",
+      "source": "c2288b375543b19dfd8f45f88880f53e5f183736",
       "checks": [
         "Clean, version-consistent candidate passes static preflight; native acceptance and release-tag gates remain pending."
       ]
@@ -62,7 +64,9 @@
   "inspected_contracts": {
     "omarchy": "573b518be16ec47547d50fe6197bc7f53e982340",
     "tablet_mode": "76c7833f5f96a189ee9d8975084b4607138f8cd3",
-    "omatouch": "v1.1.1"
+    "omatouch": "v1.1.1",
+    "hyprland": "v0.56.2",
+    "oma_cast": "typecraft-dev/oma-cast; manifest blob d25c0205c2b98028ece4da511597acd201b2937c, CLI blob b4d96aa91083eb1f2f7f959ba68b350e7e182fec"
   },
   "pending": [
     "Native Omarchy load/render, focus restoration and touch overlay/keyboard layering.",
@@ -72,7 +76,10 @@
     "Gesture/editor/upgrade/fresh-install regression harnesses on the new candidate.",
     "Fractional scaling, physical multi-monitor, hotplug, shell reload, disable/removal and idle/battery observations.",
     "ARM64/iPad mini 4 graphics, touch mapping and end-to-end tablet acceptance.",
-    "Secure keyboard-free login, suspend/wake and unlock; inspected Omarchy lock view has no on-screen keyboard."
+    "Secure keyboard-free login, suspend/wake and unlock; inspected Omarchy lock view has no on-screen keyboard.",
+    "Real Oma-Cast dismissal/focus handoff, named-wheel persistence, file dialogs and cross-machine import.",
+    "Saved work setups with real new and single-instance windows; pair placement on fractional/rotated outputs.",
+    "Live expanded-agent launches and unchanged default configuration; see docs/AGENTS-11.md."
   ],
   "limitations": [
     "Qt event tests use real Qt input delivery with theme/UI stubs, not Quickshell, the Omarchy shell, or real keyboard providers.",
@@ -85,15 +92,17 @@
   "historical_evidence": "docs/history/v0.2.0-ACCEPTANCE.json",
   "qa_handoff": "docs/TOUCH.md#native-qa-handoff",
   "ci": {
-    "url": "https://github.com/tcballard/omarchy-plugin-orb/actions/runs/40937591478",
-    "run_id": 40937591478,
-    "job_id": 123672147632,
-    "head_sha": "e72ab5bda13d7e5695b2cafd0c7901465c351c5d",
+    "url": "https://github.com/tcballard/omarchy-plugin-orb/actions/runs/40940889905",
+    "run_id": 40940889905,
+    "job_id": 123683655149,
+    "head_sha": "c2288b375543b19dfd8f45f88880f53e5f183736",
     "conclusion": "success"
   },
   "review_notes": [
-    "Touch helper operations use whitelisted verbs and argument arrays; validates fresh resources; bounds subprocess time and output; no eval, installation or privilege escalation.",
+    "Touch helper operations use whitelisted verbs, fresh resources and bounded IPC. Setup launch strings use a fixed template and strictly validated desktop IDs, not user-supplied shell programs.",
     "View actions are serialized and generation-scoped; late responses do not change a reopened view. Status discovery is read-only.",
-    "Authoring/test files flagged by advisory scanning are repository sources; do not treat the complete source archive as an installable runtime bundle."
+    "Authoring/test files flagged by advisory scanning are repository sources; do not treat the complete source archive as an installable runtime bundle.",
+    "Wheel imports require digest-bound review, bounded/checksummed images and validated actions; no imported shortcut is executed or automatically selected.",
+    "PRs #12 and #15 are merged into v0.3.0 through f736f9e; their portable tests are integrated and extended. Native acceptance is still pending."
   ]
 }

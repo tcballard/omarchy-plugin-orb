@@ -49,7 +49,7 @@ Switch named wheels from desktop or touch views. Settings → **Wheels** creates
 v0.3.0 adds a touch home with **Favourites, Apps, Windows and Controls**. Open Settings → **Touch**, choose **Touch**, select the display and Save. A movable Orb button appears on the chosen screen. You can also add Orb to your bar and tap it to open touch navigation on that bar’s display.
 
 - Tap a labelled favourite, hold it to edit, or enable drag selection. Choose a left/right edge fan or full wheel. Small viewports use a scrollable grid without shrinking targets.
-- Search installed apps, switch windows, restore minimised windows, maximise, move between existing workspaces and confirm before closing.
+- Browse installed apps or open Oma-Cast Search, switch windows, restore minimised windows, maximise, move between existing workspaces and confirm before closing.
 - Adjust sound, playback and display brightness; open Omarchy’s Network panel. An enabled [Tablet Mode](https://github.com/andreiyurik/omarchy-tablet-mode) provides rotation controls.
 - Use an enabled [OmaTouch](https://github.com/M44F4/omatouch) keyboard with `wtype`, or a keyboard configured through Tablet Mode. Orb opens it for its own text fields and leaves space for typing. A keyboard button is always available.
 - **Automatic** follows Tablet Mode only when a working fold sensor explicitly reports a folded device. **Touch** is the persistent choice for an iPad or tablet without that sensor. Existing installations stay in Desktop mode until changed.
