@@ -34,7 +34,7 @@ jobs:
         with:
           node-version: "22"
       - name: Install verification dependencies
-        run: sudo apt-get update && sudo apt-get install -y lua5.4 qt6-declarative-dev-tools qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-templates qml6-module-qtquick-window qml6-module-qtqml-workerscript qml6-module-qttest qml6-module-qtquick-dialogs
+        run: sudo apt-get update && sudo apt-get install -y lua5.4 libqt6svg6 qt6-declarative-dev-tools qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-templates qml6-module-qtquick-window qml6-module-qtqml-workerscript qml6-module-qttest qml6-module-qtquick-dialogs
       - name: Validate QML
         run: for file in *.qml; do /usr/lib/qt6/bin/qmlformat -n "$file" >/dev/null; done
       - name: Exercise the custom-icon editor
