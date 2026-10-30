@@ -11,7 +11,7 @@ const read=p=>fs.readFileSync(p,'utf8'),hash=s=>createHash('sha256').update(s).d
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(fn,message){for(let i=0;i<100;i++){try{if(fn())return;}catch{}await sleep(100);}throw Error(message);}
 const key=k=>run('wtype','-s','80','-k',k,'-s','80');
-const isOrb=b=>/^(Orb shortcut wheel|Orb on empty desktop) \[orb:/.test(b.description||'');
+const isOrb=b=>/^(Orb shortcut wheel|Orb on empty desktop|Orb mouse button) \[orb:/.test(b.description||'');
 const installUrl=process.env.ORB_INSTALL_URL||'https://github.com/tcballard/omarchy-plugin-orb.git';
 const unrelatedBindings=text=>text.split('\n').filter(line=>line!=='require("orb") -- Orb shortcut wheel').join('\n').trimEnd();
 const unrelatedShell=text=>{const s=JSON.parse(text);s.plugins=(s.plugins||[]).filter(p=>p.id!==id);return s;};
@@ -51,6 +51,7 @@ async function install(){console.log(run('omarchy','plugin','add',installUrl,'--
   let binds=json('hyprctl','binds','-j').filter(isOrb);
   assert.equal(binds.filter(b=>b.description.startsWith('Orb shortcut wheel [orb:')).length,1);
   assert.equal(binds.filter(b=>b.description.startsWith('Orb on empty desktop [orb:')).length,config.desktopRightClick?1:0);
+  assert.equal(binds.filter(b=>b.description.startsWith('Orb mouse button [orb:')).length,config.mouseOpen?2:0);
   assert.ok(!fs.existsSync(paths.bindings)||!read(paths.bindings).includes('require("orb") -- Orb shortcut wheel'));
   pass('Fresh Git reinstall enables the exact candidate with one shortcut and the configured right-click binding');
   console.log(run('omarchy','plugin','disable',id));

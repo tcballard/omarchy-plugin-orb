@@ -1,6 +1,15 @@
 # Changelog
 
-## 0.2.0 — release candidate
+## 0.3.0 — release candidate
+
+- Choose a built-in icon or local SVG, PNG, JPEG or WebP image for custom commands and submenus, including a file chooser.
+- Open Orb with an optional extra mouse button: tap to keep it open, or hold, point and release to launch. Centre/outside releases cancel; submenus remain open for a second selection.
+- Discover nine additional installed coding agents without installing software or changing the default agent.
+- Retain desktop keyboard/right-click controls and cover output selection, reveal timing and overlay lifecycle regressions.
+
+Thanks to Michal Mazurek for the original extra-button contribution. Touch/tablet navigation is planned for v0.4.0. Named wheels, import/export, saved work setups and split/swap controls are deferred to later releases.
+
+## 0.2.0 — 2026-10-23
 
 - Open on Omarchy 4.0.6 without depending on the newer shell's overlay and animation helpers; keep the installed-app catalog available when that shell omits its app-library service.
 - Undo shortcut additions, removals, replacements and reordering with Undo or Ctrl+Z, keeping appearance and opening drafts.

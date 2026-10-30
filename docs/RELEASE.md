@@ -1,13 +1,15 @@
-# Orb v0.2.0 candidate
+# Orb v0.3.0 — accepted for merge
 
-Prepared on `feature/settings-editor`, separate from `main`. The manifest and VERSION are 0.2.0. No v0.2.0 tag or GitHub release has been published.
+The owner accepted the candidate and disclosed coverage gaps on 2026-10-30 and requested PR #16 ready for merge. The owner will merge, write the release notes and publish; no merge, tag or release is performed automatically.
 
-[Acceptance evidence](ACCEPTANCE.json) binds the native and portable checks to the tested commit. [Release notes](RELEASE-NOTES.md) describe the user-visible changes. The previous release's [acceptance](history/v0.1.1-ACCEPTANCE.json), [release record](history/v0.1.1-RELEASE.md) and [notes](history/v0.1.1-RELEASE-NOTES.md) are retained separately.
+The release includes custom icons with a file chooser, optional extra mouse-button gestures, expanded installed-agent discovery and desktop overlay fixes. Touch/tablet belongs to v0.4.0; named wheels, transfers, saved work setups and split/swap controls are deferred further.
 
-Native checks use owned Omadev sessions with the Omarchy 4.0.6 source and the current development shell on this XPS. They share the installed Quickshell and Hyprland packages; this does not recreate the reporter's full historical OS. Installation checks use the real plugin manager and a private local Git origin, upgrading the published v0.1.1 source to the candidate, then testing a fresh configuration, disable/enable, reload, update and removal. They restore the test session's original configuration and leave the host installation alone.
+`docs/ACCEPTANCE.json` records the source identity, CI evidence and exact owner acceptance. Native cases without supplied results remain pending rather than being called passed. Manual host-desktop testing is valid; Omadev applies only to the guarded automated harnesses.
 
-Source archive preparation is exercised only in a disposable clone with a local annotated tag. The real repository and GitHub receive no v0.2.0 tag from this preparation. Candidate assets are local review artifacts, not a published release.
+Merge PR #16 using **Create a merge commit** to retain the accepted source in history. The release workflow supports the recorded owner acceptance through **allow_pending_live=true**, tied to the exact final main commit. It validates the archive before pushing a tag, creates a draft and verifies downloaded assets. The owner reviews and publishes that draft.
 
-Before publication, review and merge the branch, require green CI on the final `main` commit, reconcile that commit against the accepted runtime, and dispatch the release workflow for the exact authorized SHA. The workflow creates an immutable annotated tag and a draft release with a source archive, source/release manifests, SPDX inventory and SHA-256 checksums. Download and verify those draft assets before publication. Marketplace snapshot updates remain a separate maintainer review.
+- [Feature and user setup summary](RELEASE-SUMMARY.md)
+- [Cut the release](CUT-RELEASE.md)
+- [Optional additional desktop testing and rollback](DESKTOP-TEST.md)
 
-Physical multi-monitor, hotplug, fractional scaling and other architectures remain unverified. A hard shell crash can leave runtime bindings until shell restart or compositor reload. Modified legacy files and unrelated configuration are preserved.
+The existing local v0.4.0 checkout remains separate. The release-notes file is still a draft for the owner to replace.

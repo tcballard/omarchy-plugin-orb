@@ -45,7 +45,7 @@ function saved(){return JSON.parse(fs.readFileSync(config,'utf8'));}
 function previewPoint(s,index){const angle=(index*360/s.draftActions.length-90)*Math.PI/180,p=s.preview;return [s.settingsX+p.x+p.diameter/2+Math.cos(angle)*p.diameter*.33,s.settingsY+p.y+p.diameter/2+Math.sin(angle)*p.diameter*.33];}
 async function choose(query){text(query);await until(()=>status().pickerItems.length>0);key('Return');await sleep(100);}
 async function undoChecks(){
-    await reset();await openSettings();assert.equal(status().version,'0.2.0');assert.equal(control('orb-undo').enabled,false);
+    await reset();await openSettings();assert.equal(status().version,JSON.parse(fs.readFileSync(path.join(repo,'manifest.json'),'utf8')).version);assert.equal(control('orb-undo').enabled,false);
     const original=status().draftActions,origins=status().draftActionOrigins,children=status().draftChildOrigins;
     await click('orb-tab-1');await click('orb-size-large');await click('orb-shape-polygon');
     await click('orb-tab-2');await fill('orb-opening-key','F12');await click('orb-tab-0');

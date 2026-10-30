@@ -16,7 +16,7 @@ const legacy='343207fe59ee08875b5f263337c72c8b957ce583';
 run('git','merge-base','--is-ancestor',legacy,source);
 const oldConfig=fs.readFileSync(config,'utf8'),oldShell=fs.readFileSync(shell,'utf8'),link=fs.readlinkSync(target);
 const unrelatedShell=value=>{const s=JSON.parse(value);s.plugins=(s.plugins||[]).filter(p=>p.id!==id);return s;};
-const baselineErrors=run('hyprctl','configerrors'),isOrb=b=>/^(Orb shortcut wheel|Orb on empty desktop) \[orb:/.test(b.description||'');
+const baselineErrors=run('hyprctl','configerrors'),isOrb=b=>/^(Orb shortcut wheel|Orb on empty desktop|Orb mouse button) \[orb:/.test(b.description||'');
 const binds=()=>json('hyprctl','binds','-j').filter(isOrb);
 const key=k=>run('wtype','-s','80','-k',k,'-s','80');
 const report={date:new Date().toISOString(),input_commit:source,omarchy:run('git','-C',process.env.OMARCHY_PATH,'rev-parse','HEAD'),legacy,checks:[]};
@@ -38,7 +38,7 @@ async function remove(){
     assert.ok(!fs.existsSync(target));
     assert.ok(!JSON.stringify(json('hyprctl','layers','-j')).includes('omarchy-plugin-orb'));
 }
-async function ready(){await until(()=>status().setupReady&&status().version==='0.2.0','Candidate failed to load/setup');assert.equal(status().setupError,'');}
+async function ready(){await until(()=>status().setupReady&&status().version===JSON.parse(fs.readFileSync(path.join(repo,'manifest.json'),'utf8')).version,'Candidate failed to load/setup');assert.equal(status().setupError,'');}
 async function restart(){run('omarchy','restart','shell');await ready();}
 async function openSettings(){ipc('shell','summon',id,'{}');await until(()=>status().ready&&status().revealed&&status().opacity===1);await sleep(180);key('Home');key('Return');await until(()=>status().settingsOpen);}
 (async()=>{try{
@@ -55,7 +55,7 @@ async function openSettings(){ipc('shell','summon',id,'{}');await until(()=>stat
     assert.equal(run('git','-C',target,'rev-parse','HEAD'),source);assert.equal(run('git','-C',target,'status','--porcelain'),'');
     preserved(fixtureText);assert.equal(binds().length,2);assert.equal(status().shape,'circle');
     await openSettings();assert.equal(status().draftActions.length,8);assert.equal(status().draftDiameter,270);assert.equal(status().draftAnimation,false);assert.equal(status().undoCount,0);key('Escape');key('Escape');
-    pass('Upgrade through the native manager to the exact v0.2.0 candidate; byte-preserve legacy settings, metadata, custom size and eight slots');
+    pass('Upgrade through the native manager to the exact candidate; byte-preserve legacy settings, metadata, custom size and eight slots');
     console.log(run('omarchy','plugin','disable',id));await until(()=>binds().length===0);
     console.log(run('omarchy','plugin','enable',id));await ready();await until(()=>binds().length===2);
     run('hyprctl','reload');await until(()=>binds().length===2);preserved(fixtureText);
@@ -65,7 +65,7 @@ async function openSettings(){ipc('shell','summon',id,'{}');await until(()=>stat
     console.log(run('omarchy','plugin','add',origin,'--enable','--yes'));await restart();
     const fresh=fs.readFileSync(config,'utf8'),expected=JSON.parse(fs.readFileSync(path.join(repo,'config.example.json')));
     assert.deepEqual(JSON.parse(fresh),expected);assert.equal(binds().length,1);
-    await openSettings();assert.equal(status().draftActions.length,6);assert.equal(status().version,'0.2.0');key('Escape');key('Escape');
+    await openSettings();assert.equal(status().draftActions.length,6);assert.equal(status().version,JSON.parse(fs.readFileSync(path.join(repo,'manifest.json'),'utf8')).version);key('Escape');key('Escape');
     pass('A fresh native Git install creates the default six-slot configuration, loads Settings and registers one shortcut automatically');
     for(let i=0;i<3;i++){
         ipc('shell','summon',id,'{}');await until(()=>status().ready&&status().opacity===1);await sleep(160);key('Escape');await until(()=>!status().opened);

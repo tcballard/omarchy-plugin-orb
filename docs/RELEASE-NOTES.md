@@ -1,20 +1,15 @@
-Orb v0.2.0 makes the wheel easier to set up and personalise.
+Draft for Orb v0.3.0 — desktop release candidate, not yet published.
 
-- Arrange five to eight shortcuts with a draggable wheel preview, searchable app picker and keyboard controls.
-- Choose Circle or Polygon; five shortcuts make a pentagon, while the centre stays circular.
-- Open Files into its own wheel of Home, Recent, Starred, Downloads and other standard folders.
-- Create custom commands and submenus, and change the opening shortcut and desktop right-click in Settings.
-- Choose Small, Medium or Large, or fine-tune the size. Settings stays centred and keeps its opening frame.
-- Undo shortcut edits without losing Appearance or Opening drafts. The Settings header shows the installed version.
-- Load on the Omarchy 4.0.6 shell without its newer overlay/animation helpers; retain the app catalog when that shell omits its app-library service.
+Orb adds custom shortcut icons, an extra mouse-button gesture and more installed coding agents.
 
-Existing layouts and custom metadata are retained. Changes remain drafts until Save; Cancel leaves the saved configuration alone.
+- Pick a local image from the action editor for a custom command or submenu; built-in icons remain available.
+- Tap your configured extra mouse button to open Orb, or hold, point and release to launch. Releasing in the centre or outside cancels. A submenu stays open for a second selection.
+- Discover Qwen Code, DeepSeek Harness, MiniMax Code, Kiro CLI, Freebuff, Kilo, Devin CLI, Amp and Command Code when installed. Discovery stays offline and leaves the default agent unchanged.
 
-Install or update through Omarchy:
+Enable the extra button in Settings → Opening. Orb checks binding conflicts and preserves normal left, right and middle clicks; the chosen extra button is consumed across applications while enabled. Existing keyboard and desktop right-click activation remain available.
 
-```bash
-omarchy plugin add https://github.com/tcballard/omarchy-plugin-orb.git --enable
-omarchy plugin update io.github.tcballard.orb
-```
+Thanks to Michal Mazurek for the original extra-button contribution.
 
-These commands track `main`. This feature branch is a release candidate until merged and released. See [the acceptance record](ACCEPTANCE.json) for the exact tested source, packages and limits. Physical multi-monitor, hotplug, fractional scaling and the complete historical 4.0.6 OS package set remain unverified.
+Touch/tablet navigation is planned for v0.4.0. Named wheels, wheel import/export, saved work setups and split/swap controls are deferred further. Existing saved settings are retained.
+
+Native acceptance of this exact candidate remains required before publication. See [release readiness](RELEASE.md) and [acceptance evidence](ACCEPTANCE.json).

@@ -16,7 +16,7 @@ test('release source preserves checks and binds manifests, SBOM and checksums',(
   };
   try {
     const files=run(source,'git',['ls-files','--cached','--others','--exclude-standard','-z']).split('\0');
-    for(const file of files){if(!file)continue;const to=path.join(repo,file);fs.mkdirSync(path.dirname(to),{recursive:true});fs.copyFileSync(path.join(source,file),to);fs.chmodSync(to,fs.statSync(path.join(source,file)).mode);}
+    for(const file of files){if(!file || !fs.existsSync(path.join(source,file)))continue;const to=path.join(repo,file);fs.mkdirSync(path.dirname(to),{recursive:true});fs.copyFileSync(path.join(source,file),to);fs.chmodSync(to,fs.statSync(path.join(source,file)).mode);}
     const git=(...args)=>run(repo,'git',args);
     git('init','-q');git('config','user.name','Orb archive test');git('config','user.email','test@example.invalid');git('config','commit.gpgsign','false');git('config','tag.gpgsign','false');
     git('add','.');git('commit','-qm','Synthetic runtime fixture');

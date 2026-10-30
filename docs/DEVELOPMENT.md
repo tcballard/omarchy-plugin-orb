@@ -10,7 +10,7 @@ This retains the starter identity/CI checks and adds geometry/config tests. On O
 
 Install from main with `omarchy plugin add https://github.com/tcballard/omarchy-plugin-orb.git --enable`. For a committed development checkout, use the supported local Git URL with `omarchy plugin add "$PWD" --enable --yes`. Normal updates use `omarchy plugin update io.github.tcballard.orb`; remove with `omarchy plugin remove io.github.tcballard.orb`. The compatibility `./install` and `./uninstall` wrappers only forward to the native manager. No post-install terminal command is needed.
 
-The current settings acceptance harness runs **only in an owned omadev nest**:
+Native acceptance may be performed manually on the host desktop using [DESKTOP-TEST.md](DESKTOP-TEST.md). Omadev is optional. The existing automated settings harness itself runs **only in an owned omadev nest**:
 
 ```bash
 omadev ensure 4 --owner orb-settings --plugin "$PWD"
@@ -21,6 +21,15 @@ node tests/editor-live.cjs
 ```
 
 The harness refuses the host desktop. It saves/restores the nest's Orb config, uses real Wayland pointer/drag and keyboard input, and exercises size presets, direct catalog-to-wheel assignment, cancelled drops, draft/cancel/save/reopen, metadata retention, keyboard reordering, opening controls and live binding updates, shortcut conflicts, custom command arguments, submenu edits and launches, six-to-eight shortcuts and screen edges. Appearance checks open six/eight-slot Settings at all corners and both side edges, verify the entire panel is centred within reserved screen space, and retain the opening frame through tab changes, presets and full slider drags. Commands launch only a local argv-recording fixture. Captures and JSON results stay under ignored `artifacts/`. `--appearance-only` checks that placement and sizing; `--catalog-only` also checks presets and direct assignment; `--submenu-only` narrows a failed submenu check. No video is recorded.
+
+For the v0.3.0 extra-button gesture, use an owned, single-monitor, scale-1 unrotated nest linked to this checkout:
+
+```bash
+./tests/build-pointer
+node tests/gesture-live.cjs
+```
+
+The script selects an unused extra-button code, temporarily replaces only the nest's Orb settings, launches a private recording fixture, and restores the settings and pointer in cleanup. It checks tap/dismiss, directional launch, centre cancellation, submenu opening and removing both bindings. It does not test a physical mouse, multiple monitors or a button pressed over a real application. Also test those manually on the target desktop, including a conflicting binding, application input, keyboard use, shell/compositor reload, disable/removal and monitor edges. This test has not yet been run for v0.3.0.
 
 Every editor run also checks the installed version label and shortcut Undo: removal, keyboard/pointer reorder, additions, submenu edits and catalog assignments, retained origin identities, native text Undo, and preservation of appearance/opening drafts. Use `--undo-only` for that focused check.
 
@@ -66,3 +75,5 @@ Historical v0.1 check: `node tests/expanded-slots-live.cjs` starts with a six-sl
 `node tests/lifecycle-live.cjs` explicitly removes and reinstalls Orb on the live desktop. It backs up relevant configuration under ignored `artifacts/`, refuses a modified installed checkout, checks unload/owned-binding removal, compares configuration and unrelated settings, then tests a fresh Git reinstall and repeated install. It checks saved slots/appearance, three summon/Escape cycles and focus restoration. If removal starts but a check fails before reinstall finishes, it attempts reinstall in cleanup. It leaves Orb installed and retains backups. Physical key presses and action launches are separate checks.
 
 `node tests/shapes-live.cjs` runs only in an owned nest. It checks Circle/Polygon draft, Cancel and save/reopen; removal down to five slots; polygon preview dragging; real pointer sectors and empty corners for five through eight entries; the circular centre; and three/two-entry submenus with back navigation. Captures and runtime hashes stay under ignored `artifacts/`. `tests/shapes.test.cjs` checks legacy defaults, shape persistence and validation, slot limits, and polygon hits against an independent convex-polygon check.
+
+The release also runs Qt editor checks with `QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software QT_QPA_PLATFORMTHEME= QT_STYLE_OVERRIDE=Basic /usr/lib/qt6/bin/qmltestrunner -input tests/qml -import tests/qml/stubs`. These use host UI stubs and do not establish native shell acceptance. Agent and overlay fixtures remain portable coverage; see `docs/AGENTS-11.md`.

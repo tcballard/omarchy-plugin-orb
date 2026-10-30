@@ -4,6 +4,8 @@
 
 Size presets and direct assignment from an action picker also take interaction inspiration from [Logitech Actions Ring](https://support.logi.com/hc/en-gb/articles/17844647906967-Actions-Ring), suggested by the user. Orb implements these interactions independently in Omarchy's hosted QML.
 
+The optional extra mouse-button support starts with [Michal Mazurek's contribution](https://github.com/tcballard/omarchy-plugin-orb/compare/main...MichalMazurek:optional-mouse-button), shared in [issue #13](https://github.com/tcballard/omarchy-plugin-orb/issues/13). The v0.3.0 branch builds the hold-and-release interaction on that work.
+
 The Omarchy 4.0.6 compatibility fix follows [sanjithdoescode's diagnosis and PanelWindow proposal](https://github.com/sanjithdoescode/omarchy-plugin-orb/pull/1), reported in [issue #10](https://github.com/tcballard/omarchy-plugin-orb/issues/10). `OrbOverlay.qml` adapts Omarchy's [OverlayWindow at 57e4d3d1294e02dd3866a066e2f7276bd86c9938](https://github.com/tcballard/omarchy/blob/57e4d3d1294e02dd3866a066e2f7276bd86c9938/shell/Ui/OverlayWindow.qml), retaining screen selection, scale readiness and monitor-removal handling without importing that newer shell component. The MIT notice is retained in [assets/agents/LICENSE.omarchy](assets/agents/LICENSE.omarchy).
 
 Template authorship: Tom Ballard, 2026, MIT. Project author: Tom Ballard.

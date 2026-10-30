@@ -13,6 +13,8 @@ FocusScope {
     property string shape: "circle"
     property string shortcut: "SUPER + ALT + O"
     property bool desktopRightClick: false
+    property bool mouseOpen: false
+    property string mouseButtonText: "277"
     property var actions: []
     property var actionOrigins: []
     property var childOrigins: []
@@ -40,6 +42,8 @@ FocusScope {
         : ["Top", "Upper right", "Lower right", "Bottom", "Lower left", "Upper left"]
     readonly property bool wide: width >= Commons.Style.space(580)
     readonly property var shortcutCheck: Model.shortcut(shortcut)
+    readonly property var mouseCheck: Model.mouseButton(mouseButtonText)
+    readonly property string activationError: Model.activationConflict(desktopRightClick, mouseOpen, mouseButtonText)
     readonly property var filteredChoices: actionEditor.filteredChoices
     readonly property var sizePresets: [{ name: "Small", value: 240 }, { name: "Medium", value: 360 }, { name: "Large", value: 480 }]
     implicitHeight: Math.min(maximumHeight, openingHeight || header.height + bodyColumn.height + footer.height + Commons.Style.space(64))
@@ -52,6 +56,7 @@ FocusScope {
         original = JSON.parse(JSON.stringify(config));
         diameter = config.diameter; animation = config.animation; shape = config.shape || "circle";
         shortcut = config.shortcut || "SUPER + ALT + O"; desktopRightClick = config.desktopRightClick === true;
+        mouseOpen = config.mouseOpen === true; mouseButtonText = String(config.mouseButton || 277);
         actions = JSON.parse(JSON.stringify(config.actions)); choices = catalog;
         actionOrigins = actions.map(function(a, i) { return i; });
         childOrigins = actions.map(function(a) { return a.children ? a.children.map(function(c, i) { return i; }) : []; });
@@ -63,6 +68,7 @@ FocusScope {
     }
     function draft() { return { diameter: diameter, animation: animation, shape: shape, actions: actions,
         shortcut: shortcutCheck.error ? shortcut : shortcutCheck.value, desktopRightClick: desktopRightClick,
+        mouseOpen: mouseOpen, mouseButton: mouseCheck.error ? mouseButtonText : mouseCheck.value,
         actionOrigins: actionOrigins, childOrigins: childOrigins }; }
     function appIcon(action) {
         if (!action.desktopId) return "";
@@ -145,7 +151,7 @@ FocusScope {
     function changeKey(value) {
         var tokens = shortcut.split("+"); tokens[tokens.length - 1] = value.toUpperCase().trim(); shortcut = tokens.join(" + ");
     }
-    function requestSave() { if (!busy && !shortcutCheck.error && editingSlot < 0) saveRequested(); }
+    function requestSave() { if (!busy && !shortcutCheck.error && !activationError && editingSlot < 0) saveRequested(); }
     function previewStatus() {
         var p = preview.mapToItem(panel, 0, 0);
         return { x: p.x, y: p.y, diameter: preview.width, shape: preview.shape, dragging: preview.dragging, selected: selectedSlot };
@@ -419,6 +425,28 @@ FocusScope {
                 EditorLabel { width: parent.width; wrapMode: Text.WordWrap; text: "Orb checks for shortcut conflicts before saving."; opacity: 0.65 }
                 EditorButton { objectName: "orb-desktop-click"; text: "Right-click on empty desktop · " + (panel.desktopRightClick ? "On" : "Off"); selected: panel.desktopRightClick; enabled: !panel.busy; onClicked: panel.desktopRightClick = !panel.desktopRightClick }
                 EditorLabel { width: parent.width; wrapMode: Text.WordWrap; text: "Applications keep their context menus. On the wallpaper, Orb replaces the right-double-click theme gesture."; opacity: 0.65 }
+                EditorButton { objectName: "orb-mouse-button"; text: "Extra mouse button · " + (panel.mouseOpen ? "On" : "Off"); selected: panel.mouseOpen; enabled: !panel.busy; onClicked: panel.mouseOpen = !panel.mouseOpen }
+                EditorLabel { width: parent.width; wrapMode: Text.WordWrap; text: "Tap to open Orb, or hold, move and release to launch. The chosen button is used by Orb in other apps too."; opacity: 0.65 }
+                EditorLabel { text: "Button code · 275–511" }
+                Row {
+                    width: parent.width; spacing: Commons.Style.space(6)
+                    Repeater {
+                        model: [275, 276, 277]
+                        delegate: EditorButton {
+                            required property int modelData
+                            text: "Button " + modelData; selected: panel.mouseButtonText === String(modelData)
+                            enabled: !panel.busy; onClicked: panel.mouseButtonText = String(modelData)
+                        }
+                    }
+                }
+                TextField {
+                    id: mouseCode
+                    objectName: "orb-mouse-code"
+                    width: Math.min(parent.width, Commons.Style.space(180)); maximumLength: 3; enabled: !panel.busy
+                    text: panel.mouseButtonText; placeholderText: "277"
+                    onTextEdited: panel.mouseButtonText = text
+                }
+                EditorLabel { width: parent.width; wrapMode: Text.WordWrap; text: panel.activationError || "Button codes vary by mouse. Use wev to identify yours; left, right and middle click remain available."; color: panel.activationError ? Commons.Color.urgent : Commons.Color.menu.text; opacity: panel.activationError ? 1 : 0.65 }
             }
             ActionEditor {
                 id: actionEditor
@@ -436,7 +464,7 @@ FocusScope {
         Row {
             visible: panel.editingSlot < 0; width: parent.width; spacing: Commons.Style.space(8)
             EditorButton { objectName: "orb-cancel"; width: (parent.width - parent.spacing) / 2; text: "Cancel"; enabled: !panel.busy; onClicked: panel.canceled() }
-            EditorButton { objectName: "orb-save"; width: (parent.width - parent.spacing) / 2; text: panel.busy ? "Saving…" : "Save"; selected: true; enabled: !panel.busy && !panel.shortcutCheck.error; onClicked: panel.requestSave() }
+            EditorButton { objectName: "orb-save"; width: (parent.width - parent.spacing) / 2; text: panel.busy ? "Saving…" : "Save"; selected: true; enabled: !panel.busy && !panel.shortcutCheck.error && !panel.activationError; onClicked: panel.requestSave() }
         }
     }
     Connections {

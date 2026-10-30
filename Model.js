@@ -1,6 +1,15 @@
 // Pure geometry and validation, shared by the hosted QML and Node tests.
 var icons = ["browser", "terminal", "files", "screenshot", "themes", "plugins", "agents", "settings", "codex", "claude", "grok", "postcard", "app", "create",
-    "home", "recent", "starred", "downloads", "documents", "pictures", "music", "videos", "trash"];
+    "home", "recent", "starred", "downloads", "documents", "pictures", "music", "videos", "trash",
+    "search", "link", "code", "calendar", "clock", "mail", "lock", "power", "cloud", "bookmark"];
+function validIcon(value) {
+    return typeof value === "string" && (icons.indexOf(value) >= 0 ||
+        (value.length <= 4096 && /^\/[^\x00-\x1f]*\.(svg|png|jpe?g|webp)$/i.test(value)));
+}
+function iconUrl(value) {
+    return validIcon(value) && value.charAt(0) === "/"
+        ? "file://" + value.split("/").map(encodeURIComponent).join("/") : "";
+}
 function fileActions(helper) {
     return ["Home", "Recent", "Starred", "Downloads", "Documents", "Pictures", "Music", "Videos", "Trash"].map(function(label) {
         var id = label.toLowerCase();
@@ -26,18 +35,50 @@ function shortcut(value) {
     canonical.push(key);
     return { value: canonical.join(" + "), key: key, mask: mask, error: "" };
 }
-function bindingConflict(binds, value, desktopRightClick) {
+function mouseButton(value) {
+    if (value === undefined || value === null) return { value: 277, error: "" };
+    if (typeof value === "string") {
+        if (!/^\d{3}$/.test(value)) return { error: "Use an extra mouse button code from 275 to 511.", value: 277 };
+        value = Number(value);
+    }
+    if (!Number.isInteger(value) || value < 275 || value > 511)
+        return { error: "Use an extra mouse button code from 275 to 511.", value: 277 };
+    return { value: value, error: "" };
+}
+function bindingSignature(document) {
+    document = document || {};
+    var mouseOpen = document.mouseOpen === true;
+    var mouse = mouseButton(document.mouseButton);
+    return [document.shortcut || "SUPER + ALT + O", document.desktopRightClick === true, mouseOpen, mouseOpen ? (mouse.error ? 0 : mouse.value) : 0];
+}
+function activationConflict(desktopRightClick, mouseOpen, mouseCode) {
+    var mouse = mouseButton(mouseCode);
+    if (mouse.error) return mouse.error;
+    if (mouseOpen && desktopRightClick && mouse.value === 273)
+        return "Mouse code 273 is the desktop right-click. Turn one of them off or choose another code.";
+    return "";
+}
+function bindingConflict(binds, value, desktopRightClick, mouseOpen, mouseCode) {
     var checked = shortcut(value);
     if (checked.error) return checked.error;
+    var clash = mouseOpen ? activationConflict(desktopRightClick, true, mouseCode) : "";
+    if (clash) return clash;
     if (!Array.isArray(binds)) return "Could not check existing shortcuts. Try saving again.";
+    var mouse = mouseOpen ? mouseButton(mouseCode).value : 0;
     for (var i = 0; i < binds.length; i++) {
         var b = binds[i], description = String(b.description || "");
+        var ownMouse = description.indexOf("Orb mouse button [orb:") === 0;
+        var ownDesktop = description.indexOf("Orb on empty desktop [orb:") === 0;
         if (String(b.key).toUpperCase() === checked.key && b.modmask === checked.mask
             && description.indexOf("Orb shortcut wheel [orb:") !== 0)
             return checked.value + " is already in use. Choose another shortcut.";
-        if (desktopRightClick && b.key === "mouse:273" && b.modmask === 0
-            && description.indexOf("Orb on empty desktop [orb:") !== 0)
+        // The other Orb bind is removed in this same save, so it is not a conflict.
+        // Any other bind on the mouse key is a conflict: remove() clears the whole key.
+        if (desktopRightClick && b.key === "mouse:273" && b.modmask === 0 && !ownDesktop
+            && !(ownMouse && (!mouseOpen || mouse !== 273)))
             return "Desktop right-click is already in use. Turn it off or change the existing binding.";
+        if (mouseOpen && b.key === "mouse:" + mouse && !ownMouse && !(ownDesktop && !desktopRightClick))
+            return "Mouse code " + mouse + " is already in use. Choose another code or turn the mouse button off.";
     }
     return "";
 }
@@ -48,7 +89,7 @@ function move(items, from, to) {
     return copy;
 }
 function action(a, depth) {
-    if (!a || typeof a.label !== "string" || !a.label.trim() || a.label.length > 20 || icons.indexOf(a.icon) < 0) return null;
+    if (!a || typeof a.label !== "string" || !a.label.trim() || a.label.length > 20 || !validIcon(a.icon)) return null;
     var out = { label: a.label.trim(), icon: a.icon };
     if (a.desktopId !== undefined) {
         if (typeof a.desktopId !== "string" || !/^[A-Za-z0-9_.@+-]{1,255}$/.test(a.desktopId) || a.command || a.menu || a.children) return null;
@@ -60,6 +101,8 @@ function action(a, depth) {
         && JSON.stringify(a.command) === '["omarchy","launch","nautilus"]') {
         out.menu = "files"; return out;
     }
+    // Old development-only setup slots remain valid but cannot launch.
+    if (a.menu === "setups" && depth === 0 && !a.command && !a.children) { out.menu = a.menu; return out; }
     if ((a.menu === "agents" || a.menu === "files") && depth === 0 && !a.command && !a.children) { out.menu = a.menu; return out; }
     if (Array.isArray(a.children) && depth === 0 && !a.command && !a.menu && a.children.length > 0 && a.children.length <= 12) {
         out.children = a.children.map(function(c) { return action(c, 1); });
@@ -135,7 +178,7 @@ function mergeSettings(document, original, draft) {
             return { error: "Slot " + (i + 1) + " changed elsewhere. Reopen settings to load it." };
         result.actions[i] = draft.actions[i];
     }
-    var fields = ["diameter", "animation", "shape", "shortcut", "desktopRightClick"];
+    var fields = ["diameter", "animation", "shape", "shortcut", "desktopRightClick", "mouseOpen", "mouseButton"];
     for (var field = 0; field < fields.length; field++) {
         var name = fields[field];
         if (draft[name] === undefined || original[name] === draft[name]) continue;
@@ -162,10 +205,18 @@ function parse(raw, fallback) {
     if (activation.error) return { config: fallback, error: activation.error };
     if (value.desktopRightClick !== undefined && typeof value.desktopRightClick !== "boolean")
         return { config: fallback, error: "Desktop right-click must be on or off." };
+    if (value.mouseOpen !== undefined && typeof value.mouseOpen !== "boolean")
+        return { config: fallback, error: "Mouse button must be on or off." };
+    var mouse = mouseButton(value.mouseButton);
+    if (mouse.error) return { config: fallback, error: mouse.error };
+    var mouseOpen = value.mouseOpen === true;
+    var clash = activationConflict(value.desktopRightClick === true, mouseOpen, mouse.value);
+    if (clash) return { config: fallback, error: clash };
     if (value.shape !== undefined && value.shape !== "circle" && value.shape !== "polygon")
         return { config: fallback, error: "Choose a circle or polygon wheel." };
     return { config: { actions: actions, diameter: Math.max(220, Math.min(600, Number(value.diameter) || 240)), animation: value.animation !== false,
-        shape: value.shape || "circle", shortcut: activation.value, desktopRightClick: value.desktopRightClick === true }, error: "" };
+        shape: value.shape || "circle", shortcut: activation.value, desktopRightClick: value.desktopRightClick === true,
+        mouseOpen: mouseOpen, mouseButton: mouse.value }, error: "" };
 }
 // Vertices align with actions; sector boundaries meet the middle of each edge.
 // One/two-entry submenu pages retain a circle because no polygon exists there.
@@ -199,5 +250,5 @@ function placement(px, py, width, height, reserved, preferred) {
         x: Math.max(left, Math.min(px - size / 2, left + availableW - size)),
         y: Math.max(top, Math.min(py - size / 2, top + availableH - size - footer)) };
 }
-if (typeof module !== "undefined") module.exports = { parse: parse, action: action, icons: icons, fileActions: fileActions, shortcut: shortcut, bindingConflict: bindingConflict, edgeRadius: edgeRadius,
+if (typeof module !== "undefined") module.exports = { parse: parse, action: action, icons: icons, validIcon: validIcon, iconUrl: iconUrl, fileActions: fileActions, shortcut: shortcut, mouseButton: mouseButton, bindingSignature: bindingSignature, bindingConflict: bindingConflict, edgeRadius: edgeRadius,
     move: move, hit: hit, placement: placement, mergeSettings: mergeSettings };

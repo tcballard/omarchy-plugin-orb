@@ -1,5 +1,7 @@
 {
   "shortcut": "SUPER + ALT + O",
+  "mouseOpen": false,
+  "mouseButton": 277,
   "diameter": 240,
   "animation": true,
   "shape": "circle",

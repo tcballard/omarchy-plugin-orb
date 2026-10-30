@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Commons as Commons
+import "Model.js" as Model
 
 Item {
     id: icon
@@ -19,8 +20,8 @@ Item {
     Image {
         id: mark
         anchors.fill: parent
-        visible: (icon.branded || icon.appSource.toString() !== "") && status === Image.Ready
-        source: icon.appSource.toString() !== "" ? icon.appSource : icon.branded ? Qt.resolvedUrl("assets/agents/" + icon.name
+        visible: (icon.branded || icon.appSource.toString() !== "" || Model.iconUrl(icon.name) !== "") && status === Image.Ready
+        source: icon.appSource.toString() !== "" ? icon.appSource : Model.iconUrl(icon.name) !== "" ? Model.iconUrl(icon.name) : icon.branded ? Qt.resolvedUrl("assets/agents/" + icon.name
             + (icon.lightSurface && icon.name !== "claude" ? "-light" : "") + ".svg") : ""
         sourceSize.width: Math.ceil(width * 2)
         sourceSize.height: Math.ceil(height * 2)

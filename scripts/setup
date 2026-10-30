@@ -98,9 +98,28 @@ desktop_click=$(jq -r '.desktopRightClick == true' "$config")
 binds=$(hyprctl binds -j)
 conflicts=$(jq --arg key "$key" --argjson mask "$mask" '[.[] | select((.key | ascii_upcase) == $key and .modmask == $mask and ((.description // "") | startswith("Orb shortcut wheel [orb:") | not))] | length' <<< "$binds")
 (( conflicts == 0 )) || { echo "Shortcut $canonical is already in use; existing bindings were preserved." >&2; exit 1; }
+mouse_open=$(jq -r '.mouseOpen == true' "$config")
+mouse_button=$(jq -r 'if .mouseButton == null then "277" else (.mouseButton | tostring) end' "$config")
+mouse_meta=false
+mouse_slot=2
+if [[ $desktop_click == true ]]; then mouse_slot=3; fi
+if [[ $mouse_open == true ]]; then
+  [[ $mouse_button =~ ^[0-9]{3}$ ]] && (( 10#$mouse_button >= 275 && 10#$mouse_button <= 511 )) || {
+    echo 'Use an extra mouse button code from 275 to 511.' >&2; exit 1;
+  }
+  mouse_button=$((10#$mouse_button))
+  mouse_meta=$mouse_button
+fi
+# remove() clears every bind on one key. Ignore only the Orb bind this save replaces.
+retire_mouse=false
+[[ $mouse_open == true && $mouse_button == 273 ]] || retire_mouse=true
 if [[ $desktop_click == true ]]; then
-  conflicts=$(jq '[.[] | select(.key == "mouse:273" and .modmask == 0 and ((.description // "") | startswith("Orb on empty desktop [orb:") | not))] | length' <<< "$binds")
+  conflicts=$(jq --argjson retire "$retire_mouse" '[.[] | select(.key == "mouse:273" and .modmask == 0 and ((.description // "") | startswith("Orb on empty desktop [orb:") | not) and (((.description // "") | startswith("Orb mouse button [orb:")) and $retire | not))] | length' <<< "$binds")
   (( conflicts == 0 )) || { echo 'Desktop right-click is already bound; existing bindings were preserved.' >&2; exit 1; }
+fi
+if [[ $mouse_open == true ]]; then
+  conflicts=$(jq --arg key "mouse:$mouse_button" --argjson drop "$desktop_click" '[.[] | select(.key == $key and ((.description // "") | startswith("Orb mouse button [orb:") | not) and (((.description // "") | startswith("Orb on empty desktop [orb:")) and ($drop | not) | not))] | length' <<< "$binds")
+  (( conflicts == 0 )) || { echo "Mouse code $mouse_button is already in use; existing bindings were preserved." >&2; exit 1; }
 fi
 # Only validated ASCII keys/tokens enter Lua. User commands/labels never do.
 code="local token = \"$token\"
@@ -112,11 +131,20 @@ local handles = {}
 -- Bind:remove() removes every binding for the same key on current Hyprland.
 -- Reuse unchanged keys instead of staging duplicates and deleting both.
 for owner, previous in pairs(r) do
-  if type(previous) == 'table' and owner ~= 'dead' then
+  if type(previous) == 'table' and owner ~= 'dead' and owner ~= 'gesture' and owner ~= 'gestureTimer' then
     if previous.shortcut == \"$canonical\" then handles[1] = previous[1]; retained[previous[1]] = true end
 "
 if [[ $desktop_click == true ]]; then
   code+=$'    if previous.desktopClick and previous[2] then handles[2] = previous[2]; retained[previous[2]] = true end\n'
+fi
+if [[ $mouse_open == true ]]; then
+  # Keep this bind in a dense slot. ipairs stops at a hole, and remove() clears every bind on that key.
+  code+=$'    if previous.mouseButton == '"$mouse_button"$' then\n'
+  code+=$'      if not previous.mouseGesture then error("Restart the shell to upgrade the Orb mouse binding.") end\n'
+  code+=$'      local oldMouse\n'
+  code+=$'      if previous.desktopClick then oldMouse = previous[3] else oldMouse = previous[2] end\n'
+  code+=$'      if oldMouse then handles['"$mouse_slot"$'] = oldMouse; retained[oldMouse] = true end\n'
+  code+=$'    end\n'
 fi
 code+=$'    -- Old registry entries have no key metadata. Migrate them once.\n    if not previous.shortcut then\n      for _, bind in ipairs(previous) do pcall(function() bind:remove() end); retained[bind] = true end\n    end\n  end\nend\nlocal created = {}\nlocal ok, failure = pcall(function()\n'
 code+="
@@ -132,8 +160,13 @@ if [[ $desktop_click == true ]]; then
   code+=$(sed "s/description = \"Orb on empty desktop\"/description = \"Orb on empty desktop [orb:$token]\"/" "$repo/desktop-click.lua")
   code+=$'\nend\nhandles[2] = assert(desktopBind())\ncreated[#created + 1] = handles[2]\nend\n'
 fi
-code+=$'\nend)\nif not ok then\n  for _, bind in ipairs(created) do pcall(function() bind:remove() end) end\n  error(failure)\nend\nfor owner, previous in pairs(r) do\n  if type(previous) == "table" and owner ~= "dead" then\n    for _, bind in ipairs(previous) do if not retained[bind] then pcall(function() bind:remove() end) end end\n    r[owner] = nil\n  end\nend\n'
-code+="handles.shortcut = \"$canonical\"; handles.desktopClick = $desktop_click
+if [[ $mouse_open == true ]]; then
+  code+=$'\n'
+  code+=$(cat "$repo/scripts/mouse-binding.lua")
+  code+=$'\nif not handles['"$mouse_slot"$'] then\nhandles['"$mouse_slot"$'] = orbMouseBinding("mouse:'"$mouse_button"$'")\ncreated[#created + 1] = handles['"$mouse_slot"$']\nend\n'
+fi
+code+=$'\nend)\nif not ok then\n  for _, bind in ipairs(created) do pcall(function() bind:remove() end) end\n  error(failure)\nend\nfor owner, previous in pairs(r) do\n  if type(previous) == "table" and owner ~= "dead" and owner ~= "gesture" and owner ~= "gestureTimer" then\n    for _, bind in ipairs(previous) do if not retained[bind] then pcall(function() bind:remove() end) end end\n    r[owner] = nil\n  end\nend\n'
+code+="handles.shortcut = \"$canonical\"; handles.desktopClick = $desktop_click; handles.mouseButton = $mouse_meta; handles.mouseGesture = $mouse_open
 r.latest = token
 r[token] = handles
 "
@@ -146,6 +179,11 @@ hyprctl binds -j | jq -e --arg key "$key" --argjson mask "$mask" '[.[] | select(
 if [[ $desktop_click == true ]]; then
   hyprctl binds -j | jq -e '[.[] | select(.key == "mouse:273" and .modmask == 0 and ((.description // "") | startswith("Orb on empty desktop [orb:")))] | length == 1' >/dev/null || {
     echo 'Orb desktop activation did not complete.' >&2; exit 1;
+  }
+fi
+if [[ $mouse_open == true ]]; then
+  hyprctl binds -j | jq -e --arg key "mouse:$mouse_button" '[.[] | select(.key == $key and .modmask == 0 and ((.description // "") | startswith("Orb mouse button [orb:")))] | length == 2 and (map(select(.release == true)) | length == 1)' >/dev/null || {
+    echo 'Orb mouse button did not register.' >&2; exit 1;
   }
 fi
 printf 'ready\n'

@@ -51,6 +51,10 @@ esac
       const bits={SUPER:64,ALT:8,CTRL:4,SHIFT:1};
       const binds=[{key:parts.at(-1),modmask:parts.slice(0,-1).reduce((m,p)=>m|(bits[p]||0),0),description:`Orb shortcut wheel [orb:${token}]`}];
       if(value.desktopRightClick)binds.push({key:'mouse:273',modmask:0,description:`Orb on empty desktop [orb:${token}]`});
+      if(value.mouseOpen) {
+        binds.push({key:`mouse:${value.mouseButton||277}`,modmask:0,description:`Orb mouse button [orb:${token}] press`,release:false});
+        binds.push({key:`mouse:${value.mouseButton||277}`,modmask:0,description:`Orb mouse button [orb:${token}] release`,release:true});
+      }
       fs.writeFileSync(path.join(dir,'registered.json'),JSON.stringify(binds));
       return spawnSync('bash',[path.join(root,'scripts/setup'),token],{encoding:'utf8',timeout:10000,
         env:{...process.env,PATH:bin+path.delimiter+process.env.PATH,HOME:dir,XDG_CONFIG_HOME:config,ORB_FIXTURE:dir,ORB_MODE:mode}});
@@ -114,6 +118,98 @@ for(const mode of ['none','reload','query','configerrors']) for(const hasBinding
       if(hasBindings)assert.equal(fs.readFileSync(path.join(config,'hypr/bindings.lua'),'utf8'),other+'require("orb") -- Orb shortcut wheel\n');
     }
   }));
+test('extra-button registration, conflicts and lifecycle are safe',()=>fixture(({dir,run,put})=>{
+  const base=JSON.parse(example);
+  const capture=value=>{
+    put('omarchy/orb.json',JSON.stringify({...base,...value}));
+    const result=run(); assert.equal(result.status,0,result.stderr);
+    return fs.readFileSync(path.join(dir,'apply.lua'),'utf8');
+  };
+  const on=capture({mouseOpen:true,mouseButton:275});
+  const both=capture({mouseOpen:true,mouseButton:275,desktopRightClick:true});
+  const changed=capture({mouseOpen:true,mouseButton:276,desktopRightClick:true});
+  const off=capture({mouseOpen:false});
+  assert.match(on,/orbMouseBinding\("mouse:275"\)/);
+  assert.match(on,/release = true/);
+  for(const code of [272,273,274,512]){
+    fs.rmSync(path.join(dir,'applied'),{force:true});
+    put('omarchy/orb.json',JSON.stringify({...base,mouseOpen:true,mouseButton:code}));
+    const result=run(); assert.notEqual(result.status,0); assert.match(result.stderr,/275 to 511/);
+    assert.equal(fs.existsSync(path.join(dir,'applied')),false);
+  }
+  for(const modmask of [0,64]){
+    fs.writeFileSync(path.join(dir,'binds.json'),JSON.stringify([{key:'mouse:275',modmask,description:'User mouse'}]));
+    put('omarchy/orb.json',JSON.stringify({...base,mouseOpen:true,mouseButton:275}));
+    const result=run(); assert.notEqual(result.status,0); assert.match(result.stderr,/already in use/);
+  }
+  const interpreter=['lua','lua5.4','texlua'].find(cmd=>spawnSync('which',[cmd]).status===0);
+  assert.ok(interpreter,'Lua interpreter required for lifecycle tests');
+  const script=path.join(dir,'mouse-lifecycle.lua');
+  const newer='1792450000001-123456789';
+  fs.writeFileSync(script,`local registered, events = {}, {}
+local pointer = {x=100,y=200}
+local failRelease = false
+hl = {
+  bind = function(key, cb, opts)
+    if failRelease and opts.release then return nil end
+    local bind = { key=key, callback=cb, opts=opts, removed=false }
+    function bind:remove() for _, b in ipairs(registered) do if b.key==self.key then b.removed=true end end end
+    table.insert(registered, bind); return bind
+  end,
+  timer = function(cb, opts)
+    local timer={ callback=cb, enabled=true }
+    function timer:set_enabled(value) self.enabled=value end
+    return timer
+  end,
+  get_cursor_pos = function() return pointer end,
+  dsp = { event=function(value) return value end },
+  dispatch = function(value) table.insert(events,value) end,
+  exec_cmd = function() end
+}
+local function evaluate(code) assert(load(code))() end
+local function live() local n=0; for _,b in ipairs(registered) do if not b.removed then n=n+1 end end; return n end
+local function get(key, release) for _,b in ipairs(registered) do if b.key==key and not b.removed and (b.opts.release==true)==release then return b end end end
+local function fire(key, release) local b=assert(get(key,release)); b.callback() end
+local on=${JSON.stringify(on)}
+local both=${JSON.stringify(both)}
+local changed=${JSON.stringify(changed)}
+local off=${JSON.stringify(off)}
+evaluate(on); assert(live()==3)
+local timer=assert(__orb_native_bindings.gestureTimer); assert(not timer.enabled)
+fire('mouse:275',false); assert(timer.enabled)
+assert(events[1]=='orb/${token}/press/100,200/0')
+pointer={x=110,y=150}; timer.callback(); assert(events[2]=='orb/${token}/move/110,150/30')
+fire('mouse:275',true); assert(not timer.enabled and events[3]=='orb/${token}/release/110,150/30')
+fire('mouse:275',true); assert(#events==3)
+local oldPress=get('mouse:275',false); local oldRelease=get('mouse:275',true)
+evaluate(both); assert(live()==4 and get('mouse:275',false)==oldPress and get('mouse:275',true)==oldRelease)
+evaluate(changed); assert(live()==4 and not get('mouse:275',false) and get('mouse:276',true))
+failRelease=true
+assert(not pcall(evaluate, string.gsub(changed,'276','277')))
+assert(live()==4 and get('mouse:276',false) and not get('mouse:277',false))
+failRelease=false
+evaluate(off); assert(live()==1 and not timer.enabled)
+evaluate(on); assert(live()==3)
+evaluate(${JSON.stringify(on.replaceAll(token,newer))}); assert(live()==3)
+fire('mouse:275',false); assert(events[#events]=='orb/${newer}/press/110,150/0')
+fire('mouse:275',true)
+fire('mouse:275',false); pointer=nil; fire('mouse:275',true)
+assert(events[#events]=='orb/${newer}/cancel/110,150/0' and not timer.enabled)
+pointer={x=110,y=150}; fire('mouse:275',false)
+for i=1,200 do timer.callback() end
+assert(events[#events]=='orb/${newer}/cancel/110,150/6000' and not timer.enabled)
+local before=#events; fire('mouse:275',true); assert(#events==before)
+fire('mouse:275',false); assert(timer.enabled)
+evaluate(${JSON.stringify(off.replaceAll(token,newer))}); assert(live()==1 and not timer.enabled)
+print('PASS: ordered gestures, binding reuse, rollback and cleanup')
+`);
+  const lua=spawnSync(interpreter,[script],{encoding:'utf8'});assert.equal(lua.status,0,lua.stdout+lua.stderr);
+}));
+test('an invalid mouse code cannot silently acquire a different button',()=>fixture(({dir,run,put})=>{
+  put('omarchy/orb.json',JSON.stringify({...JSON.parse(example),mouseOpen:true,mouseButton:'abc'}));
+  const result=run(); assert.notEqual(result.status,0); assert.match(result.stderr,/275/);
+  assert.equal(fs.existsSync(path.join(dir,'apply.lua')),false);
+}));
 test('modified legacy module is retained without changing unrelated files',()=>fixture(({run,put,config})=>{
   const modified=legacy+'-- my changes\n';put('hypr/orb.lua',modified);put('hypr/bindings.lua','require("orb") -- Orb shortcut wheel\n');
   const r=run();assert.notEqual(r.status,0);assert.match(r.stderr,/Modified legacy/);

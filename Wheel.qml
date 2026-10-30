@@ -8,6 +8,7 @@ import qs.Commons as Commons
 import qs.Ui
 import "Model.js" as Model
 import "BindingLifecycle.js" as BindingLifecycle
+import "Gesture.js" as Gesture
 
 Item {
     id: root
@@ -16,6 +17,8 @@ Item {
     property var manifest: null
     property bool opened: false
     property bool positioned: false
+    property var gesture: null
+    property bool gestureCentre: false
     property int selected: -1
     property bool keyboardMode: false
     property point pointer: Qt.point(0, 0)
@@ -54,7 +57,7 @@ Item {
     property string setupError: ""
     property bool setupPending: false
     property bool setupReady: false
-    readonly property bool hubActive: keyboardMode ? selected === -2 : wheelMouse.atCentre
+    readonly property bool hubActive: gesture ? gestureCentre : keyboardMode ? selected === -2 : wheelMouse.atCentre
     readonly property string pluginId: "io.github.tcballard.orb"
     readonly property string configPath: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/omarchy/orb.json"
 
@@ -69,7 +72,7 @@ Item {
         return typeof Commons.Style.duration === "function" ? Commons.Style.duration(milliseconds) : milliseconds;
     }
     function updateBindings(document) {
-        var signature = JSON.stringify([document.shortcut || "SUPER + ALT + O", document.desktopRightClick === true]);
+        var signature = JSON.stringify(Model.bindingSignature(document));
         if (signature === bindingSignature) return;
         bindingSignature = signature;
         requestSetup();
@@ -82,7 +85,13 @@ Item {
         target: Hyprland
         function onRawEvent(event) {
             if (event.name === "configreloaded") root.requestSetup();
+            else if (event.name === "custom") root.gestureEvent(event.data);
         }
+    }
+    Timer {
+        id: gestureWatchdog
+        interval: 6500
+        onTriggered: if (root.gesture) root.dismiss()
     }
     Timer {
         id: setupDelay
@@ -120,12 +129,18 @@ Item {
         selected = -1; keyboardMode = false; positioned = false;
         submenuTitle = ""; agentMenu = false; parentSelection = -1;
         installedAgents = []; agentError = ""; menuPage = 0;
-        moveGate.reset(); opened = true;
-        cursor.running = false; cursor.running = true;
+        moveGate.reset();
+        if (gesture) {
+            pointer = Qt.point(gesture.x, gesture.y); positioned = true;
+            cursor.running = false;
+        }
+        opened = true;
+        if (!gesture) { cursor.running = false; cursor.running = true; }
         Qt.callLater(function() { keys.forceActiveFocus(); });
     }
     function close() {
         opened = false; positioned = false; selected = -1;
+        gesture = null; gestureCentre = false; gestureWatchdog.stop();
         if (settingsReloadPending) settingsSaving = false;
         settingsOpen = false; settingsReloadPending = false;
         cursor.running = false; launchDelay.stop(); pendingCommand = []; pendingDesktopId = "";
@@ -134,6 +149,46 @@ Item {
     function dismiss() {
         close();
         if (shell && typeof shell.hide === "function") shell.hide(pluginId);
+    }
+    function gestureEvent(data) {
+        var event = Gesture.parse(data, bindingOwner);
+        if (!event || !config.mouseOpen) return;
+        if (event.type === "press") {
+            if (opened) { dismiss(); return; }
+            if (gesture) return;
+            gesture = Gesture.begin(event);
+            gestureCentre = true; gestureWatchdog.restart();
+            if (!shell || typeof shell.summon !== "function" || shell.summon(pluginId, "{}") === false) {
+                gesture = null; gestureCentre = false; gestureWatchdog.stop();
+            }
+        } else if (event.type === "cancel") {
+            if (gesture) dismiss();
+        } else if (gesture) {
+            gesture = Gesture.update(gesture, event);
+            updateGestureSelection();
+            finishGesture();
+        }
+    }
+    function gesturePoint() {
+        if (!gesture || !panel.contentReady || !positioned || !panel.targetMonitor) return null;
+        var data = panel.monitorData;
+        return wheel.mapFromItem(panel.contentItem, gesture.currentX - (data.x || 0), gesture.currentY - (data.y || 0));
+    }
+    function updateGestureSelection() {
+        var p = gesturePoint();
+        if (!p || !gesture) return;
+        keyboardMode = false;
+        gestureCentre = !gesture.moved || Math.hypot(p.x - wheel.width / 2, p.y - wheel.height / 2) < wheel.width * 0.18;
+        selected = gesture.moved ? Model.hit(p.x, p.y, wheel.width, selectionCount, config.shape) : -1;
+    }
+    function finishGesture() {
+        if (!gesture || !gesture.released || !opened || !panel.contentRevealed) return;
+        updateGestureSelection();
+        var outcome = Gesture.outcome(gesture), index = selected;
+        gesture = null; gestureCentre = false; gestureWatchdog.stop(); moveGate.reset();
+        if (outcome === "tap") { selected = -1; return; }
+        if (outcome !== "select" || index < 0 || index >= selectionCount) { dismiss(); return; }
+        activate(index);
     }
     function select(delta) {
         if (!selectionCount) return;
@@ -154,6 +209,11 @@ Item {
         if (opened && index === -2) { activateHub(); return; }
         if (!opened || index < 0 || index >= selectionCount) return;
         var action = wheelActions[index];
+        if (action.menu === "setups") {
+            activateHub();
+            settingsError = "Work setups are deferred. Replace this shortcut in Settings.";
+            return;
+        }
         if (action.menu || action.children) {
             parentSelection = index; submenuTitle = action.label;
             agentMenu = action.menu === "agents";
@@ -227,7 +287,8 @@ Item {
         var checked = Model.parse(JSON.stringify(settingsCard.draft()), null);
         if (checked.error) { settingsError = checked.error; return; }
         settingsSaving = true; saveWatchdog.restart();
-        if (checked.config.shortcut !== settingsCard.original.shortcut || checked.config.desktopRightClick !== settingsCard.original.desktopRightClick)
+        if (checked.config.shortcut !== settingsCard.original.shortcut || checked.config.desktopRightClick !== settingsCard.original.desktopRightClick
+            || checked.config.mouseOpen !== settingsCard.original.mouseOpen || checked.config.mouseButton !== settingsCard.original.mouseButton)
             bindingCheck.running = true;
         else reloadForSave();
     }
@@ -266,6 +327,8 @@ Item {
             shape: root.config.shape, draftShape: settingsCard.shape,
             draftDiameter: settingsCard.diameter, draftAnimation: settingsCard.animation,
             draftShortcut: settingsCard.shortcut, draftDesktopRightClick: settingsCard.desktopRightClick,
+            draftMouseOpen: settingsCard.mouseOpen, draftMouseButton: settingsCard.mouseCheck.value,
+            gestureActive: !!gesture, gestureReleased: gesture ? gesture.released : false,
             preview: settingsCard.previewStatus(), selectedSlot: settingsCard.selectedSlot,
             settingsLayout: settingsCard.layoutStatus(),
             settingsControls: root.settingsOpen ? settingsCard.controls() : [],
@@ -349,7 +412,8 @@ Item {
             if (!root.settingsSaving) return;
             var error = "Could not check existing shortcuts. Try saving again.";
             if (code === 0) try {
-                error = Model.bindingConflict(JSON.parse(existingBindings.text), settingsCard.draft().shortcut, settingsCard.desktopRightClick);
+                var opening = settingsCard.draft();
+                error = Model.bindingConflict(JSON.parse(existingBindings.text), opening.shortcut, opening.desktopRightClick, opening.mouseOpen, opening.mouseButton);
             } catch (failure) {}
             if (error) root.failSettingsSave(error);
             else root.reloadForSave();
@@ -403,6 +467,13 @@ Item {
             if (root.settingsOpen) settingsCard.choices = root.settingsChoices();
         }
     }
+    Connections {
+        target: panel
+        function onContentReadyChanged() { if (panel.contentReady) root.updateGestureSelection(); }
+        function onContentRevealedChanged() {
+            if (panel.contentRevealed) { root.updateGestureSelection(); root.finishGesture(); }
+        }
+    }
     Process {
         id: agents
         command: [Qt.resolvedUrl("scripts/agents").toString().replace(/^file:\/\//, "")]
@@ -429,6 +500,8 @@ Item {
     OrbOverlay {
         id: panel
         shown: root.opened
+        preferPointerScreen: !!root.gesture
+        openingPointer: root.pointer
         shownKeyboardFocus: root.opened ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
         WlrLayershell.namespace: "omarchy-plugin-orb"
         readonly property var monitorData: targetMonitor ? targetMonitor.lastIpcObject : ({})
@@ -551,11 +624,12 @@ Item {
                 acceptedButtons: Qt.AllButtons
                 cursorShape: (root.selected >= 0 && !root.keyboardMode) || atCentre ? Qt.PointingHandCursor : Qt.ArrowCursor
                 onPositionChanged: mouse => {
+                    if (root.gesture) return;
                     if (!moveGate.moved(this, mouse)) return;
                     root.keyboardMode = false;
                     root.selected = Model.hit(mouse.x, mouse.y, width, root.selectionCount, root.config.shape);
                 }
-                onExited: if (!root.keyboardMode) root.selected = -1
+                onExited: if (!root.gesture && !root.keyboardMode) root.selected = -1
                 onClicked: mouse => {
                     var i = Model.hit(mouse.x, mouse.y, width, root.selectionCount, root.config.shape);
                     if (mouse.button === Qt.LeftButton && i >= 0) root.activate(i);
@@ -576,6 +650,7 @@ Item {
                     width: parent.width - (root.pageCount > 1 ? 64 : 20) * wheel.captionScale
                     horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
                     text: root.configError ? "Config error · using last valid actions"
+                        : root.gesture && root.selected < 0 ? "Release to cancel · tap to open"
                         : root.selected >= 0 && root.selected < root.selectionCount ? root.wheelActions[root.selected].label
                         : !root.submenuTitle && root.hubActive ? "Orb settings · click to open"
                         : root.submenuTitle && root.hubActive ? "Back to main wheel"
