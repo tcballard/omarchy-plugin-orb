@@ -4,13 +4,13 @@ The release contains custom icons, extra mouse-button gestures and additional in
 
 ## Before pressing Publish
 
-1. Complete [desktop testing](DESKTOP-TEST.md). Record the tested commit, machine/display scope, pass/fail outcomes and untested cases in `ACCEPTANCE.json`. Owner-reported desktop results are valid evidence. No Omadev requirement applies to manual testing.
-2. Pass the portable/native validation and Qt checks, including the currently blocked archive fixture. Get green CI for the final source. Resolve core failures; keep narrower hardware/agent limitations explicit.
-3. Finalize `RELEASE-NOTES.md`: remove its draft/pending wording only after acceptance. Keep the release scope and any remaining limitations accurate.
-4. Merge the prepared release branch to `main` through your normal PR process. If squash/rebase changes the tested commit identity, reconcile evidence against the resulting `main` source: the tested `input_commit` must be an ancestor of the release commit, with only docs/README/CREDITS changes afterward. Run final checks on that source and commit the evidence as a docs-only change. Never substitute a SHA without verifying the source.
-5. In `ACCEPTANCE.json`, use `status: passed` only when the required acceptance is actually complete. Preserve results and documented limitations; clear completed items from `pending`. No waiver is pre-authorized. Keep `VERSION`, `manifest.json` and the release tag at `0.3.0` / `v0.3.0`.
+1. Owner acceptance of the candidate and disclosed native coverage gaps is recorded in `ACCEPTANCE.json`. Manual cases without detailed results remain pending; additional [desktop testing](DESKTOP-TEST.md) remains available and does not require Omadev.
+2. Require green CI on the PR. Use **Create a merge commit**, not squash/rebase, so the accepted `input_commit` remains an ancestor of the final release. If you choose squash/rebase, reconcile evidence against the resulting main source before tagging; do not simply substitute a SHA.
+3. Write your release notes. Update `docs/RELEASE-NOTES.md` before running the workflow, or replace the draft release notes on GitHub before publication. `RELEASE-SUMMARY.md` provides the feature and setup summary.
+4. Keep `status: pending-live` while documented native cases remain unverified. The owner's recorded acceptance permits the explicit per-commit `allow_pending_live=true` path; it does not fabricate test passes.
+5. Keep `VERSION` and `manifest.json` at `0.3.0`, and use the immutable `v0.3.0` tag.
 
-The workflow refuses stale acceptance when runtime, tests or build/workflow inputs changed after the accepted commit. A docs-only evidence commit can follow it. Do not squash away the accepted source commit after recording evidence.
+The workflow rejects runtime/build changes made after the accepted source. Docs-only release-note changes may follow it. If code or build inputs change, rerun relevant checks and update source-bound evidence.
 
 ## Start the release workflow
 
@@ -20,7 +20,7 @@ Push the prepared branch and merge it before this step. Use **Actions → Releas
 | --- | --- |
 | `tag` | `v0.3.0` |
 | `expected_commit` | Full SHA of the accepted, final `main` commit |
-| `allow_pending_live` | `false` |
+| `allow_pending_live` | `true` — recorded owner acceptance of disclosed coverage gaps |
 
 Equivalent CLI, after final main is fetched and checked:
 
@@ -30,7 +30,7 @@ release_sha=$(git rev-parse origin/main)
 gh workflow run release.yml --ref main \
   -f tag=v0.3.0 \
   -f expected_commit="$release_sha" \
-  -f allow_pending_live=false
+  -f allow_pending_live=true
 ```
 
 This is a manual workflow, not a tag-push or release-created trigger. Use it before publishing through GitHub's Releases screen; you do not need to create the tag yourself. It also accepts an existing annotated tag only if it points to the exact authorized commit. Never move an existing published tag.

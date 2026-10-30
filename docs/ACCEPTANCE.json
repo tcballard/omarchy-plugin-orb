@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "status": "pending-live",
   "version": "0.3.0",
-  "input_commit": "188c502a8a16df6b95fcaf91889819e0b39f60c6",
+  "input_commit": "02f65422f4442795f95500804a3c068422385b42",
   "date": "2026-10-30",
-  "platform": "Local Linux x86_64; desktop-only release preparation",
+  "platform": "GitHub Actions Ubuntu 24.04 with Node 22 and Qt 6.4.2; historical local Linux x86_64 checks",
   "commands": [
     "./tests/run",
     "node tests/model.cjs",
@@ -62,7 +62,8 @@
       "name": "Complete portable suite/archive fixture",
       "pass": false,
       "reason": "Archive fixture reaches denied spawnSync of Node (EPERM) during a negative release-tag case. Full suite remains incomplete.",
-      "source": "188c502a8a16df6b95fcaf91889819e0b39f60c6"
+      "source": "188c502a8a16df6b95fcaf91889819e0b39f60c6",
+      "scope": "Historical local environment failure; superseded for release verification by successful GitHub CI at the canonical remote source."
     },
     {
       "name": "Clean candidate static release preflight",
@@ -79,28 +80,38 @@
         "Remote tag push follows archive validation; draft asset verification downloads and checks generated checksums."
       ],
       "scope": "Static inspection; GitHub workflow has not been executed."
+    },
+    {
+      "name": "Complete GitHub CI after installing the Qt SVG decoder",
+      "pass": true,
+      "source": "02f65422f4442795f95500804a3c068422385b42",
+      "url": "https://github.com/tcballard/omarchy-plugin-orb/actions/runs/41144758443",
+      "checks": [
+        "./tests/run passes, including archive positive and negative cases, manifests and checksums.",
+        "All root QML files parse.",
+        "Qt custom-icon editor tests pass on Ubuntu 24.04."
+      ]
     }
   ],
   "pending": [
     "Native editor, custom-icon chooser/rendering and application focus on this exact candidate.",
-    "Extra mouse-button gesture, conflicts, reload and disable/removal in an owned nest and with a physical mouse.",
+    "Extra mouse-button gesture, conflicts, reload and disable/removal on a normal desktop with a physical mouse.",
     "Fresh install, upgrade, app-library launch and removal acceptance.",
-    "Native expanded-agent launches with unchanged default agent.",
-    "Green CI and source-bound release acceptance.",
-    "Complete archive regression on a host permitting the required child processes."
+    "Native expanded-agent launches with unchanged default agent."
   ],
   "limitations": [
     "Portable fixtures and Qt host stubs do not establish live Omarchy acceptance.",
     "Physical multi-monitor, fractional scaling and other architectures remain unverified.",
     "Touch/tablet navigation is excluded from v0.3.0.",
-    "No pending-live release waiver is recorded."
+    "Owner acceptance is recorded separately from observed tests; pending native coverage is not represented as passed."
   ],
   "historical_evidence": [
     "docs/history/v0.2.0-ACCEPTANCE.json",
     "docs/history/v0.3.0-development-ACCEPTANCE.json"
   ],
   "environment_limits": [
-    "Shell Git cannot resolve github.com. GitHub connector confirmed public main VERSION is 0.2.0 on 2026-10-30; no branch push or CI dispatch performed."
+    "The local archive fixture encountered EPERM, but the same portable/archive suite passed in GitHub CI.",
+    "Shell Git DNS is unavailable; the PR branch was uploaded through the GitHub connector."
   ],
   "inspected_host": {
     "omarchy_source": "573b518be16ec47547d50fe6197bc7f53e982340",
@@ -108,6 +119,25 @@
     "scope": "Read-only source inspection, static checks and Qt stubs; no native acceptance claim."
   },
   "native_acceptance_method": "Manual owner testing on the normal Omarchy desktop is supported. Omadev is required only by the existing automated nest harnesses.",
-  "preparation_head": "08ba211cbde21bca573dc3a3a35b3808a8a18ea4",
-  "preparation_note": "Release workflow and desktop test documentation changed after input_commit. Earlier runtime results remain historical. Record the final tested source after desktop acceptance and CI; this record does not authorize tagging."
+  "preparation_head": "02f65422f4442795f95500804a3c068422385b42",
+  "preparation_note": "Remote source identity is canonical. The owner accepts the disclosed native coverage gaps; preserve this commit in main ancestry by using Create a merge commit. Final publication is not performed by this PR.",
+  "owner_acceptance": {
+    "actor": "Tom Ballard",
+    "date": "2026-10-30",
+    "statement": "OK, i accept everything ... get a PR ready for me to merge; ill then write the Release Notes myself based on you providing me a summary of what we have built, plus a summary of the manuakl steps we need to take in its setup",
+    "scope": "Owner accepts the candidate and disclosed coverage gaps, requests PR ready for merge, and retains control of merging, release notes and publication. No per-case native test results were supplied."
+  },
+  "release_authorization": {
+    "version": "0.3.0",
+    "input_commit": "02f65422f4442795f95500804a3c068422385b42",
+    "actor": "Tom Ballard",
+    "statement": "OK, i accept everything ... get a PR ready for me to merge; ill then write the Release Notes myself based on you providing me a summary of what we have built, plus a summary of the manuakl steps we need to take in its setup",
+    "scope": "Acceptance of disclosed pending live coverage. Publication remains owner-controlled through the per-commit workflow input."
+  },
+  "ci": {
+    "url": "https://github.com/tcballard/omarchy-plugin-orb/actions/runs/41144758443",
+    "run_id": 41144758443,
+    "head_sha": "02f65422f4442795f95500804a3c068422385b42",
+    "conclusion": "success"
+  }
 }
