@@ -6,4 +6,4 @@ node --test tests/*.test.mjs
 node tests/model.cjs
 node tests/editor.cjs
 node --test tests/*.test.cjs
-bash -n install uninstall scripts/setup scripts/launch scripts/agents scripts/agent scripts/files scripts/touch scripts/layout-share tests/native tests/build-pointer
+bash -n install uninstall scripts/setup scripts/launch scripts/agents scripts/agent scripts/files tests/native tests/build-pointer

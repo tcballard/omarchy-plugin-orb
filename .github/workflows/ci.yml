@@ -22,8 +22,10 @@ jobs:
       - run: ./tests/run
       - name: Parse QML
         run: for file in *.qml; do /usr/lib/qt6/bin/qmlformat -n "$file" >/dev/null; done
-      - name: Exercise touch input in Qt with theme stubs
+      - name: Exercise the custom-icon editor in Qt with theme stubs
         env:
           QT_QPA_PLATFORM: offscreen
           QT_QUICK_BACKEND: software
+          QT_QPA_PLATFORMTHEME: ""
+          QT_STYLE_OVERRIDE: Basic
         run: /usr/lib/qt6/bin/qmltestrunner -input tests/qml -import tests/qml/stubs

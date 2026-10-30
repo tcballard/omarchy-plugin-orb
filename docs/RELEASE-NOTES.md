@@ -1,22 +1,15 @@
-Draft for Orb v0.3.0. Available on the development branch; not tagged or released.
+Draft for Orb v0.3.0 — desktop release candidate, not yet published.
 
-Orb gains a touch home, named wheels and saved work setups for Omarchy.
+Orb adds custom shortcut icons, an extra mouse-button gesture and more installed coding agents.
 
-- Switch between named wheels with fixed shortcut positions; create, rename and manage them in Settings → Wheels.
-- Save app/workspace setups with normal tiling or equal columns, and split two touch-selected windows with ratios and side swapping.
-- Export/import wheels with bundled custom icons and an explicit command review. Search opens Oma-Cast.
-- Discover nine additional installed agents, retaining offline discovery and the existing default agent.
-- Cover overlay output selection, deferred reveal, close races, reserved geometry and hotplug with regression tests.
+- Pick a local image from the action editor for a custom command or submenu; built-in icons remain available.
+- Tap your configured extra mouse button to open Orb, or hold, point and release to launch. Releasing in the centre or outside cancels. A submenu stays open for a second selection.
+- Discover Qwen Code, DeepSeek Harness, MiniMax Code, Kiro CLI, Freebuff, Kilo, Devin CLI, Amp and Command Code when installed. Discovery stays offline and leaves the default agent unchanged.
 
+Enable the extra button in Settings → Opening. Orb checks binding conflicts and preserves normal left, right and middle clicks; the chosen extra button is consumed across applications while enabled. Existing keyboard and desktop right-click activation remain available.
 
-- Open it from a movable edge button or your bar. Tap labelled favourites, open Oma-Cast search and manage windows from the same surface.
-- Choose a left/right fan or full wheel, larger targets and optional drag selection. Hold a favourite to edit it. Compact screens keep a scrollable grid of large targets.
-- Control brightness, sound, playback and network. Connect an enabled keyboard and Tablet Mode for typing, rotation and sensor-backed switching.
-- Choose Desktop, Touch or Automatic. Existing settings keep their desktop behaviour; iPads and tablets without a fold sensor use Touch.
-- Pick a custom icon from a local image, and use the larger shortcut editor controls. The optional extra mouse button supports tap-to-open or hold, point and release.
+Thanks to Michal Mazurek for the original extra-button contribution.
 
-Thanks to Michal Mazurek for the original extra-button contribution. Hardware and keyboard integrations use the existing Tablet Mode and OmaTouch projects.
+Touch/tablet navigation is planned for v0.4.0. Named wheels, wheel import/export, saved work setups and split/swap controls are deferred further. Existing saved settings are retained.
 
-Physical touch, provider layering, ARM64/iPad hardware and the new mouse gesture still need native acceptance. Secure keyboard-free unlock needs support inside Omarchy’s lock screen. This release does not yet make Orb an official Omarchy default.
-
-[Wheels and setups](WHEELS.md) · [Setup and QA](TOUCH.md) · [Acceptance evidence](ACCEPTANCE.json)
+Native acceptance of this exact candidate remains required before publication. See [release readiness](RELEASE.md) and [acceptance evidence](ACCEPTANCE.json).

@@ -8,11 +8,6 @@ import "ShortcutHistory.js" as History
 
 FocusScope {
     id: panel
-    property bool touchFriendly: false
-    property bool keyboardShown: false
-    property var touchStatus: ({})
-    signal keyboardRequested()
-    signal keyboardToggled()
     property int diameter: 240
     property bool animation: true
     property string shape: "circle"
@@ -59,8 +54,6 @@ FocusScope {
 
     function begin(config, catalog) {
         original = JSON.parse(JSON.stringify(config));
-        touchOptions.begin(config);
-        wheelLibrary.begin(config);
         diameter = config.diameter; animation = config.animation; shape = config.shape || "circle";
         shortcut = config.shortcut || "SUPER + ALT + O"; desktopRightClick = config.desktopRightClick === true;
         mouseOpen = config.mouseOpen === true; mouseButtonText = String(config.mouseButton || 277);
@@ -73,10 +66,10 @@ FocusScope {
         openingHeight = 0;
         Qt.callLater(function() { slotNavigation.forceActiveFocus(); });
     }
-    function draft() { return Object.assign(touchOptions.draft(), {wheels:wheelLibrary.wheels,activeWheel:wheelLibrary.activeWheel,setups:wheelLibrary.setups}, { diameter: diameter, animation: animation, shape: shape, actions: actions,
+    function draft() { return { diameter: diameter, animation: animation, shape: shape, actions: actions,
         shortcut: shortcutCheck.error ? shortcut : shortcutCheck.value, desktopRightClick: desktopRightClick,
         mouseOpen: mouseOpen, mouseButton: mouseCheck.error ? mouseButtonText : mouseCheck.value,
-        actionOrigins: actionOrigins, childOrigins: childOrigins }); }
+        actionOrigins: actionOrigins, childOrigins: childOrigins }; }
     function appIcon(action) {
         if (!action.desktopId) return "";
         for (var i = 0; i < choices.length; i++)
@@ -89,9 +82,7 @@ FocusScope {
             if (index === 0 && browsingActions) actionBrowser.focusSearch();
             else if (index === 0) slotNavigation.forceActiveFocus();
             else if (index === 1) sizeControl.forceActiveFocus();
-            else if (index === 2) openingKey.forceActiveFocus();
-            else if (index === 3) touchOptions.forceActiveFocus();
-            else wheelLibrary.forceActiveFocus();
+            else openingKey.forceActiveFocus();
         });
     }
     function editSlot(index) {
@@ -215,18 +206,18 @@ FocusScope {
             width: parent.width; wrapMode: Text.WordWrap; opacity: 0.65
             text: panel.editingSlot >= 0 ? (panel.editingSlot === panel.actions.length ? "Add a shortcut to your wheel" : "Slot " + (panel.editingSlot + 1) + " · " + panel.positions[panel.editingSlot])
                 : panel.tab === 0 ? "Choose your shortcuts and put them where you want them."
-                : panel.tab === 1 ? "Make the wheel feel at home on your desktop." : panel.tab === 2 ? "Choose how you open Orb." : panel.tab === 3 ? "Set up navigation for your touchscreen." : "Manage wheels and saved work setups."
+                : panel.tab === 1 ? "Make the wheel feel at home on your desktop." : "Choose how you open Orb."
         }
         Row {
             id: tabRow
             visible: panel.editingSlot < 0; width: parent.width; spacing: Commons.Style.space(6)
             Repeater {
-                model: ["Shortcuts", "Appearance", "Opening", "Touch", "Wheels"]
+                model: ["Shortcuts", "Appearance", "Opening"]
                 delegate: EditorButton {
                     required property int index
                     required property string modelData
                     objectName: "orb-tab-" + index
-                    width: (header.width - parent.spacing * 4) / 5; text: modelData
+                    width: (header.width - parent.spacing * 2) / 3; text: modelData
                     selected: panel.tab === index; enabled: !panel.busy
                     onClicked: panel.selectTab(index)
                 }
@@ -323,7 +314,7 @@ FocusScope {
                                     required property int index
                                     required property var modelData
                                     objectName: "orb-slot-" + index
-                                    width: slotRows.width; height: Math.max(48, Commons.Style.space(40))
+                                    width: slotRows.width; height: Commons.Style.space(40)
                                     focusable: false; leftAlign: true; leftPadding: Commons.Style.space(40)
                                     text: (index + 1) + " · " + modelData.label
                                     tooltipText: panel.positions[index] || ""; selected: panel.selectedSlot === index; enabled: !panel.busy
@@ -392,7 +383,7 @@ FocusScope {
                 Item {
                     id: sizeControl
                     objectName: "orb-size-slider"
-                    width: parent.width; height: Math.max(48, Commons.Style.space(34)); activeFocusOnTab: true
+                    width: parent.width; height: Commons.Style.space(34); activeFocusOnTab: true
                     Keys.onLeftPressed: panel.diameter = Math.max(220, panel.diameter - 10)
                     Keys.onRightPressed: panel.diameter = Math.min(600, panel.diameter + 10)
                     Rectangle { anchors.fill: parent; radius: Commons.Style.cornerRadius; color: "transparent"; border.width: sizeControl.activeFocus ? 1 : 0; border.color: Commons.Color.accent }
@@ -423,7 +414,7 @@ FocusScope {
                     }
                 }
                 EditorLabel { text: "Key · letter, number, F1–F12 or Space" }
-                EditorField {
+                TextField {
                     id: openingKey
                     objectName: "orb-opening-key"
                     width: Math.min(parent.width, Commons.Style.space(180)); maximumLength: 5; enabled: !panel.busy
@@ -448,7 +439,7 @@ FocusScope {
                         }
                     }
                 }
-                EditorField {
+                TextField {
                     id: mouseCode
                     objectName: "orb-mouse-code"
                     width: Math.min(parent.width, Commons.Style.space(180)); maximumLength: 3; enabled: !panel.busy
@@ -457,22 +448,7 @@ FocusScope {
                 }
                 EditorLabel { width: parent.width; wrapMode: Text.WordWrap; text: panel.activationError || "Button codes vary by mouse. Use wev to identify yours; left, right and middle click remain available."; color: panel.activationError ? Commons.Color.urgent : Commons.Color.menu.text; opacity: panel.activationError ? 1 : 0.65 }
             }
-            TouchOptions {
-                id: touchOptions
-                visible: panel.editingSlot < 0 && panel.tab === 3
-                width: parent.width; busy: panel.busy; status: panel.touchStatus
-            }
-            WheelLibrary {
-            id: wheelLibrary
-            visible: panel.editingSlot < 0 && panel.tab === 4
-            width: parent.width; busy: panel.busy; choices: panel.choices
-            currentActions: panel.actions.map(function(a,i) {
-                var origin = panel.actionOrigins[i];
-                var originalWheel = (panel.original.wheels || []).filter(function(w) { return w.id === panel.original.activeWheel; })[0];
-                return origin >= 0 && originalWheel ? Model.mergeAction(originalWheel.actions[origin],panel.original.actions[origin],a,panel.childOrigins[i]) : a;
-            })
-        }
-        ActionEditor {
+            ActionEditor {
                 id: actionEditor
                 visible: panel.editingSlot >= 0; width: parent.width; height: visible ? implicitHeight : 0; busy: panel.busy
                 onChosen: (action, origins) => panel.chooseAction(action, origins)
@@ -484,7 +460,6 @@ FocusScope {
         id: footer
         x: header.x; y: panel.height - height - Commons.Style.space(18); width: header.width; spacing: Commons.Style.space(8)
         EditorLabel { visible: panel.error !== ""; width: parent.width; text: panel.error; wrapMode: Text.WordWrap; color: Commons.Color.urgent }
-        EditorButton { visible: panel.touchFriendly || panel.keyboardShown; text: panel.keyboardShown ? "Hide keyboard" : "Keyboard"; enabled: !panel.busy; onClicked: panel.keyboardToggled() }
         EditorButton { visible: panel.setupFailed; text: "Retry shortcut setup"; enabled: !panel.busy; onClicked: panel.retrySetup() }
         Row {
             visible: panel.editingSlot < 0; width: parent.width; spacing: Commons.Style.space(8)
@@ -516,7 +491,6 @@ FocusScope {
             while (ancestor && ancestor !== body.contentItem) ancestor = ancestor.parent;
             if (!item || !ancestor || item === slotNavigation) return;
             panel.reveal(item);
-            if (panel.touchFriendly && typeof item.cursorPosition === "number" && typeof item.text === "string") panel.keyboardRequested();
         }
     }
 }

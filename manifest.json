@@ -5,21 +5,12 @@
   "version": "0.3.0",
   "author": "Tom Ballard",
   "license": "MIT",
-  "description": "A themed shortcut wheel and touch home with apps, windows, controls and tablet-mode integration.",
+  "description": "A themed shortcut wheel with five to eight slots, circle or polygon outlines, and submenus.",
   "kinds": [
-    "menu",
-    "bar-widget"
+    "menu"
   ],
   "entryPoints": {
-    "menu": "Wheel.qml",
-    "barWidget": "TouchWidget.qml"
+    "menu": "Wheel.qml"
   },
-  "keepLoaded": true,
-  "barWidget": {
-    "displayName": "Orb",
-    "description": "Open touch navigation without a keyboard",
-    "category": "System",
-    "defaultSection": "right",
-    "allowMultiple": false
-  }
+  "keepLoaded": true
 }

@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Version tag to create on accepted main (for example v0.2.0)
+        description: Version tag to create on accepted main (for example v0.3.0)
         required: true
         type: string
       expected_commit:
@@ -33,10 +33,19 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version: "22"
-      - name: Install Lua for binding lifecycle fixtures
-        run: sudo apt-get update && sudo apt-get install -y lua5.4
+      - name: Install verification dependencies
+        run: sudo apt-get update && sudo apt-get install -y lua5.4 qt6-declarative-dev-tools qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-templates qml6-module-qtquick-window qml6-module-qtqml-workerscript qml6-module-qttest qml6-module-qtquick-dialogs
+      - name: Validate QML
+        run: for file in *.qml; do /usr/lib/qt6/bin/qmlformat -n "$file" >/dev/null; done
+      - name: Exercise the custom-icon editor
+        env:
+          QT_QPA_PLATFORM: offscreen
+          QT_QUICK_BACKEND: software
+          QT_QPA_PLATFORMTHEME: ""
+          QT_STYLE_OVERRIDE: Basic
+        run: /usr/lib/qt6/bin/qmltestrunner -input tests/qml -import tests/qml/stubs
       - run: ./tests/run
-      - name: Create immutable annotated tag on the authorized main commit
+      - name: Prepare local annotated tag on the authorized main commit
         env:
           RELEASE_TAG: ${{ inputs.tag }}
           EXPECTED_COMMIT: ${{ inputs.expected_commit }}
@@ -56,18 +65,38 @@ jobs:
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git tag -a "$RELEASE_TAG" "$EXPECTED_COMMIT" -m "Orb $RELEASE_TAG"
-            git push origin "refs/tags/$RELEASE_TAG"
           fi
       - run: node scripts/archive.mjs
         env:
           RELEASE_TAG: ${{ inputs.tag }}
           RELEASE_ACCEPT_PENDING_LIVE: ${{ inputs.allow_pending_live && inputs.expected_commit || '' }}
+      - name: Verify generated checksums
+        run: cd dist && sha256sum --check SHA256SUMS
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: source-release
           path: dist/*
+      - name: Push validated immutable tag
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        run: |
+          set -euo pipefail
+          [[ $(git ls-remote origin refs/heads/main | cut -f1) == "$EXPECTED_COMMIT" ]]
+          git push origin "refs/tags/$RELEASE_TAG"
       - name: Create draft release
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.tag }}
         run: gh release create "$RELEASE_TAG" dist/* --verify-tag --draft --title "Orb $RELEASE_TAG" --notes-file docs/RELEASE-NOTES.md
+      - name: Verify downloaded draft assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          downloaded=$(mktemp -d "$RUNNER_TEMP/orb-release-assets.XXXXXX")
+          gh release download "$RELEASE_TAG" --dir "$downloaded"
+          cmp dist/SHA256SUMS "$downloaded/SHA256SUMS"
+          cd "$downloaded"
+          sha256sum --check SHA256SUMS

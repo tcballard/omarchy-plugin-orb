@@ -2,107 +2,112 @@
   "schemaVersion": 1,
   "status": "pending-live",
   "version": "0.3.0",
-  "input_commit": "c2288b375543b19dfd8f45f88880f53e5f183736",
-  "date": "2026-10-29",
-  "platform": "Remote Linux x86_64 workspace and GitHub Actions Ubuntu 24.04; no live Omarchy, physical tablet or ARM64 session",
+  "input_commit": "188c502a8a16df6b95fcaf91889819e0b39f60c6",
+  "date": "2026-10-30",
+  "platform": "Local Linux x86_64; desktop-only release preparation",
   "commands": [
     "./tests/run",
+    "node tests/model.cjs",
+    "node tests/editor.cjs",
+    "node --test tests/*.test.cjs",
+    "QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software QT_QPA_PLATFORMTHEME= QT_STYLE_OVERRIDE=Basic /usr/lib/qt6/bin/qmltestrunner -input tests/qml -import tests/qml/stubs",
+    "QML parser on all root QML files",
+    "bash -n on runtime/test shell entry points",
+    "lua tests/desktop-click.lua",
+    "omarchy plugin validate .",
+    "python /tmp/orb-release-validator.py . --strict --publish --security --json",
     "git diff --check",
-    "validate_plugin.py . --strict --publish --security --json",
-    "release_preflight.py . --validator <omarchy-plugin-test>/scripts/validate_plugin.py --json",
-    "for file in *.qml; do /usr/lib/qt6/bin/qmlformat -n \"$file\" >/dev/null; done",
-    "QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software /usr/lib/qt6/bin/qmltestrunner -input tests/qml -import tests/qml/stubs"
+    "python /tmp/orb-release-preflight.py . --validator /tmp/orb-release-validator.py --json"
   ],
   "results": [
     {
-      "name": "Portable tests",
+      "name": "Model/editor assertions and eight Node test files",
       "pass": true,
-      "source": "c2288b375543b19dfd8f45f88880f53e5f183736",
       "checks": [
-        "75 Node tests plus geometry/configuration/editor assertions, Bash syntax and Lua fixture checks pass.",
-        "Named-wheel switching/metadata/conflicts; reviewed icon import/export; saved app launches; pair geometry and stale resources; Oma-Cast handoff; all 24 installed-agent entry points; nine overlay lifecycle regression groups."
-      ]
-    },
-    {
-      "name": "QML parsing",
-      "pass": true,
-      "source": "c2288b375543b19dfd8f45f88880f53e5f183736",
-      "checks": [
-        "All root QML files parse with the Qt parser in GitHub Actions."
-      ]
-    },
-    {
-      "name": "Qt event tests with theme/UI stubs",
-      "pass": true,
-      "source": "c2288b375543b19dfd8f45f88880f53e5f183736",
-      "checks": [
-        "20 Qt checks pass, including setup/cleanup cases.",
-        "TouchWheel: pointer/raw-touch tap, opt-in drag, cancel, hold-to-edit, rotation cancellation and compact grid.",
-        "TouchHome: navigation, Oma-Cast request, keyboard, confirmed close, focus/busy actions, split/swap and compact viewport.",
-        "WheelLibrary: duplicate/rename drafts, retained typing focus, app order/workspace/layout. Transfer processes are stubbed in Qt and tested separately as portable helpers."
+        "Custom icons, mouse and gesture bindings, expanded agent discovery, Files, shapes, Undo, and preservation of deferred settings."
       ],
-      "scope": "Qt offscreen/software event delivery with host component stubs; not physical touch or Omarchy acceptance."
+      "source": "188c502a8a16df6b95fcaf91889819e0b39f60c6"
     },
     {
-      "name": "Manifest and publish-surface validation",
+      "name": "Qt custom-icon editor",
       "pass": true,
-      "source": "c2288b375543b19dfd8f45f88880f53e5f183736",
       "checks": [
-        "Strict structural/publish checks pass with no structural errors or warnings.",
-        "Advisory capability flags remain for local processes/collected output, installers, authoring files and CI package installation. These are not a security audit."
-      ]
+        "5 passed, 0 failed, including setup/cleanup; local image path, literal arguments, remote-image rejection and submenu image preservation."
+      ],
+      "scope": "Qt 6.12 offscreen/software with host UI stubs; not native shell/file-chooser acceptance.",
+      "source": "188c502a8a16df6b95fcaf91889819e0b39f60c6"
     },
     {
-      "name": "Static release preflight",
+      "name": "QML parsing, shell syntax, Lua fixtures, official manifest validation and whitespace",
       "pass": true,
-      "source": "c2288b375543b19dfd8f45f88880f53e5f183736",
+      "source": "188c502a8a16df6b95fcaf91889819e0b39f60c6"
+    },
+    {
+      "name": "Strict publish/security validator",
+      "pass": true,
       "checks": [
-        "Clean, version-consistent candidate passes static preflight; native acceptance and release-tag gates remain pending."
-      ]
+        "No structural errors or warnings; advisory capability flags reviewed separately, not a security audit."
+      ],
+      "source": "188c502a8a16df6b95fcaf91889819e0b39f60c6"
+    },
+    {
+      "name": "Other JavaScript module suites",
+      "pass": true,
+      "checks": [
+        "Native-install fixtures, overlay lifecycle and template checks pass."
+      ],
+      "source": "188c502a8a16df6b95fcaf91889819e0b39f60c6"
+    },
+    {
+      "name": "Complete portable suite/archive fixture",
+      "pass": false,
+      "reason": "Archive fixture reaches denied spawnSync of Node (EPERM) during a negative release-tag case. Full suite remains incomplete.",
+      "source": "188c502a8a16df6b95fcaf91889819e0b39f60c6"
+    },
+    {
+      "name": "Clean candidate static release preflight",
+      "pass": true,
+      "source": "188c502a8a16df6b95fcaf91889819e0b39f60c6",
+      "scope": "Static readiness only. Native, archive, CI and publication gates remain pending."
+    },
+    {
+      "name": "Release workflow and desktop guide validation",
+      "pass": true,
+      "source": "08ba211cbde21bca573dc3a3a35b3808a8a18ea4",
+      "checks": [
+        "Workflow YAML parses; all embedded shell steps and guide commands pass bash -n.",
+        "Remote tag push follows archive validation; draft asset verification downloads and checks generated checksums."
+      ],
+      "scope": "Static inspection; GitHub workflow has not been executed."
     }
   ],
-  "inspected_contracts": {
-    "omarchy": "573b518be16ec47547d50fe6197bc7f53e982340",
-    "tablet_mode": "76c7833f5f96a189ee9d8975084b4607138f8cd3",
-    "omatouch": "v1.1.1",
-    "hyprland": "v0.56.2",
-    "oma_cast": "typecraft-dev/oma-cast; manifest blob d25c0205c2b98028ece4da511597acd201b2937c, CLI blob b4d96aa91083eb1f2f7f959ba68b350e7e182fec"
-  },
   "pending": [
-    "Native Omarchy load/render, focus restoration and touch overlay/keyboard layering.",
-    "Physical touch press, cancellation, long press, rotation, portrait/landscape and accessibility.",
-    "Real OmaTouch and Tablet Mode keyboard operations, provider loss/recovery, app text entry and Wi-Fi password entry.",
-    "Real window restoration/movement/close, brightness/audio/media and rotation controls.",
-    "Gesture/editor/upgrade/fresh-install regression harnesses on the new candidate.",
-    "Fractional scaling, physical multi-monitor, hotplug, shell reload, disable/removal and idle/battery observations.",
-    "ARM64/iPad mini 4 graphics, touch mapping and end-to-end tablet acceptance.",
-    "Secure keyboard-free login, suspend/wake and unlock; inspected Omarchy lock view has no on-screen keyboard.",
-    "Real Oma-Cast dismissal/focus handoff, named-wheel persistence, file dialogs and cross-machine import.",
-    "Saved work setups with real new and single-instance windows; pair placement on fractional/rotated outputs.",
-    "Live expanded-agent launches and unchanged default configuration; see docs/AGENTS-11.md."
+    "Native editor, custom-icon chooser/rendering and application focus on this exact candidate.",
+    "Extra mouse-button gesture, conflicts, reload and disable/removal in an owned nest and with a physical mouse.",
+    "Fresh install, upgrade, app-library launch and removal acceptance.",
+    "Native expanded-agent launches with unchanged default agent.",
+    "Green CI and source-bound release acceptance.",
+    "Complete archive regression on a host permitting the required child processes."
   ],
   "limitations": [
-    "Qt event tests use real Qt input delivery with theme/UI stubs, not Quickshell, the Omarchy shell, or real keyboard providers.",
-    "Helper tests replace IPC commands with controlled fixtures; source inspection is not native integration acceptance.",
-    "Automatic mode requires enabled Tablet Mode and a definite folded observation from a real fold sensor. Persistent Touch is the choice for tablets without one.",
-    "Normal overlay keyboards cannot provide secure lock-screen input. No authentication bypass is implemented.",
-    "No claim of official Omarchy tablet-default adoption, confirmed iPad support, marketplace approval or security audit.",
-    "No v0.3.0 release authorization for pending-live gaps has been recorded. The branch remains a draft candidate."
+    "Portable fixtures and Qt host stubs do not establish live Omarchy acceptance.",
+    "Physical multi-monitor, fractional scaling and other architectures remain unverified.",
+    "Touch/tablet navigation is excluded from v0.3.0.",
+    "No pending-live release waiver is recorded."
   ],
-  "historical_evidence": "docs/history/v0.2.0-ACCEPTANCE.json",
-  "qa_handoff": "docs/TOUCH.md#native-qa-handoff",
-  "ci": {
-    "url": "https://github.com/tcballard/omarchy-plugin-orb/actions/runs/40940889905",
-    "run_id": 40940889905,
-    "job_id": 123683655149,
-    "head_sha": "c2288b375543b19dfd8f45f88880f53e5f183736",
-    "conclusion": "success"
+  "historical_evidence": [
+    "docs/history/v0.2.0-ACCEPTANCE.json",
+    "docs/history/v0.3.0-development-ACCEPTANCE.json"
+  ],
+  "environment_limits": [
+    "Shell Git cannot resolve github.com. GitHub connector confirmed public main VERSION is 0.2.0 on 2026-10-30; no branch push or CI dispatch performed."
+  ],
+  "inspected_host": {
+    "omarchy_source": "573b518be16ec47547d50fe6197bc7f53e982340",
+    "qt": "6.12.0",
+    "scope": "Read-only source inspection, static checks and Qt stubs; no native acceptance claim."
   },
-  "review_notes": [
-    "Touch helper operations use whitelisted verbs, fresh resources and bounded IPC. Setup launch strings use a fixed template and strictly validated desktop IDs, not user-supplied shell programs.",
-    "View actions are serialized and generation-scoped; late responses do not change a reopened view. Status discovery is read-only.",
-    "Authoring/test files flagged by advisory scanning are repository sources; do not treat the complete source archive as an installable runtime bundle.",
-    "Wheel imports require digest-bound review, bounded/checksummed images and validated actions; no imported shortcut is executed or automatically selected.",
-    "PRs #12 and #15 are merged into v0.3.0 through f736f9e; their portable tests are integrated and extended. Native acceptance is still pending."
-  ]
+  "native_acceptance_method": "Manual owner testing on the normal Omarchy desktop is supported. Omadev is required only by the existing automated nest harnesses.",
+  "preparation_head": "08ba211cbde21bca573dc3a3a35b3808a8a18ea4",
+  "preparation_note": "Release workflow and desktop test documentation changed after input_commit. Earlier runtime results remain historical. Record the final tested source after desktop acceptance and CI; this record does not authorize tagging."
 }

@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls as Controls
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
@@ -10,7 +9,6 @@ import qs.Ui
 import "Model.js" as Model
 import "BindingLifecycle.js" as BindingLifecycle
 import "Gesture.js" as Gesture
-import "TouchModel.js" as TouchModel
 
 Item {
     id: root
@@ -19,84 +17,6 @@ Item {
     property var manifest: null
     property bool opened: false
     property bool positioned: false
-    property bool touchSession: false
-    property string touchScreenName: ""
-    property bool touchDismissAfter: false
-    property var saveOriginal: ({})
-    property var saveDraft: ({})
-    readonly property bool touchEnabled: TouchModel.active(config.inputMode, touchBackend.capabilities)
-    readonly property var touchScreen: TouchModel.output(config.touchOutput || "", Quickshell.screens)
-    readonly property var touchReserved: {
-        var monitors = Hyprland.monitors.values;
-        for (var i = 0; i < monitors.length; i++)
-            if (touchScreen && monitors[i].name === touchScreen.name) return monitors[i].lastIpcObject.reserved || [0,0,0,0];
-        return [0,0,0,0];
-    }
-    onTouchEnabledChanged: if (!touchEnabled && touchSession && config.inputMode === "auto") dismiss()
-    readonly property string touchHelper: decodeURIComponent(Qt.resolvedUrl("scripts/touch").toString().replace(/^file:\/\//,""))
-    function selectedOutput() {
-        if (touchSession) return touchScreenName;
-        return panel.targetScreen ? panel.targetScreen.name : touchScreen ? touchScreen.name : "";
-    }
-    function switchWheel(id) {
-        if (settingsSaving || id === config.activeWheel) return;
-        saveOriginal = JSON.parse(JSON.stringify(config));
-        saveDraft = Object.assign({},saveOriginal,{activeWheel:id});
-        settingsError = ""; settingsSaving = true; saveWatchdog.restart(); reloadForSave();
-        submenuTitle = ""; agentMenu = false; selected = -1;
-    }
-    function search() {
-        launchAction(["bash",touchHelper,"search"],"Search");
-    }
-    function runSetup(id) {
-        launchAction(["bash",touchHelper,"setup",id,selectedOutput()],"Work setup");
-    }
-    function openTouch(output) {
-        if (shell) shell.summon(pluginId, JSON.stringify({ touch: true, output: output || "" }));
-    }
-    function saveTouchPosition(value) {
-        if (settingsSaving) { edgeHandle.livePosition = config.touchPosition; return; }
-        saveOriginal = JSON.parse(JSON.stringify(config));
-        saveDraft = Object.assign({}, saveOriginal, { touchPosition: value });
-        settingsError = ""; settingsSaving = true; saveWatchdog.restart(); reloadForSave();
-    }
-    function editTouchSlot(index) {
-        submenuTitle = ""; agentMenu = false;
-        activateHub();
-        if (index >= 0) settingsCard.editSlot(index);
-    }
-    function launchDesktop(entry) {
-        if (!entry || !/^[A-Za-z0-9_.@+-]{1,255}$/.test(String(entry.id || ""))) return;
-        lastAction = appLibrary.entryName(entry); dismiss();
-        pendingDesktopId = String(entry.id); launchDelay.start();
-    }
-    TouchBackend {
-        id: touchBackend
-        mode: root.config.inputMode || "desktop"
-        viewOpen: root.opened && (root.touchSession || root.settingsOpen)
-        keyboardProvider: root.config.touchKeyboard || "auto"
-        onCompleted: (kind, success) => {
-            if (success && root.touchDismissAfter && kind !== "keyboard") root.dismiss();
-            root.touchDismissAfter = false;
-        }
-    }
-    TouchHandle {
-        id: edgeHandle
-        handleEnabled: root.touchEnabled && !root.opened
-        targetScreen: root.touchScreen
-        edge: root.config.touchEdge || "right"
-        position: root.config.touchPosition === undefined ? 0.7 : root.config.touchPosition
-        targetScale: root.config.touchScale || 1
-        reserved: root.touchReserved
-        onSummoned: output => root.openTouch(output)
-        onRepositioned: value => root.saveTouchPosition(value)
-    }
-    Connections {
-        target: Quickshell
-        function onScreensChanged() {
-            if (root.touchSession && root.opened && !Quickshell.screens.some(function(s) { return s.name === root.touchScreenName; })) root.dismiss();
-        }
-    }
     property var gesture: null
     property bool gestureCentre: false
     property int selected: -1
@@ -202,16 +122,7 @@ Item {
 
     function open(payloadJson) {
         // Payloads deliberately cannot change commands or configuration paths.
-        var payload = {};
-        try { if (String(payloadJson || "").length <= 4096) payload = JSON.parse(payloadJson || "{}"); } catch (error) {}
-        if (!payload || typeof payload !== "object" || Array.isArray(payload)) payload = {};
-        touchSession = !gesture && (payload.touch === true || (payload.desktop !== true && touchEnabled));
-        var target = typeof payload.output === "string" && payload.output ? TouchModel.output(payload.output, Quickshell.screens) : touchScreen;
-        var chooseTouchScreen = touchSession && !target;
-        if (chooseTouchScreen) touchSession = false;
-        touchScreenName = touchSession && target ? target.name : "";
-        touchHome.reset();
-        touchBackend.error = ""; touchDismissAfter = false;
+        try { JSON.parse(payloadJson || "{}"); } catch (error) {}
         launchDelay.stop(); pendingCommand = []; pendingDesktopId = "";
         if (settingsReloadPending) settingsSaving = false;
         settingsOpen = false; settingsReloadPending = false;
@@ -224,19 +135,11 @@ Item {
             cursor.running = false;
         }
         opened = true;
-        if (!gesture && !touchSession) { cursor.running = false; cursor.running = true; }
-        if (touchSession) positioned = true;
-        Qt.callLater(function() {
-            if (!root.opened) return;
-            if (chooseTouchScreen) {
-                root.activateHub(); settingsCard.selectTab(3);
-                root.settingsError = "Choose a connected touch display, then Save.";
-            } else if (root.touchSession) touchHome.forceActiveFocus();
-            else keys.forceActiveFocus();
-        });
+        if (!gesture) { cursor.running = false; cursor.running = true; }
+        Qt.callLater(function() { keys.forceActiveFocus(); });
     }
     function close() {
-        opened = false; positioned = false; selected = -1; touchDismissAfter = false;
+        opened = false; positioned = false; selected = -1;
         gesture = null; gestureCentre = false; gestureWatchdog.stop();
         if (settingsReloadPending) settingsSaving = false;
         settingsOpen = false; settingsReloadPending = false;
@@ -306,12 +209,15 @@ Item {
         if (opened && index === -2) { activateHub(); return; }
         if (!opened || index < 0 || index >= selectionCount) return;
         var action = wheelActions[index];
+        if (action.menu === "setups") {
+            activateHub();
+            settingsError = "Work setups are deferred. Replace this shortcut in Settings.";
+            return;
+        }
         if (action.menu || action.children) {
             parentSelection = index; submenuTitle = action.label;
             agentMenu = action.menu === "agents";
-            submenuRows = action.menu === "setups" ? (config.setups || []).map(function(setup) {
-                return {label:setup.name.slice(0,20),icon:"app",command:["bash",root.touchHelper,"setup",setup.id,root.selectedOutput()]};
-            }) : action.menu === "files" ? Model.fileActions(decodeURIComponent(Qt.resolvedUrl("scripts/files").toString().replace(/^file:\/\//, ""))) : action.children || [];
+            submenuRows = action.menu === "files" ? Model.fileActions(decodeURIComponent(Qt.resolvedUrl("scripts/files").toString().replace(/^file:\/\//, ""))) : action.children || [];
             selected = -1; menuPage = 0; moveGate.reset();
             if (agentMenu) { agentError = ""; installedAgents = []; agents.running = true; }
             return;
@@ -337,8 +243,6 @@ Item {
         var builtins = Model.parse(defaults.text(), config).config.actions;
         builtins = builtins.concat(builtins[4].children || []);
         builtins.splice(4, 0, { label: "Postcard", icon: "postcard", command: ["omarchy-shell", "shell", "summon", "tahayvr.postcard", "{}"] });
-        builtins.push({label:"Search",icon:"search",command:["omarchy-shell","oma-cast","show"]});
-        builtins.push({label:"Work setups",icon:"app",menu:"setups"});
         builtins.push({ label: "Make something cool", icon: "create", children: [
             { label: "New theme", icon: "themes", command: ["omarchy", "agent", "prompt", "Make me a new Omarchy theme. Ask me what look or inspiration I have in mind, then build it following the Omarchy skill's theming guide and switch to it."] },
             { label: "New plugin", icon: "plugins", command: ["omarchy", "agent", "prompt", "Make me a new Omarchy shell plugin. Ask me what I'd like it to do, then build it following the Omarchy skill's plugin guide and enable it."] },
@@ -375,14 +279,12 @@ Item {
         if (settingsReloadPending) settingsSaving = false;
         settingsOpen = false; settingsReloadPending = false;
         selected = -2; keyboardMode = true; moveGate.reset();
-        if (touchSession) touchHome.forceActiveFocus(); else keys.forceActiveFocus();
+        keys.forceActiveFocus();
     }
     function saveSettings() {
         if (settingsSaving) return;
         settingsError = "";
-        saveOriginal = settingsCard.original;
-        saveDraft = settingsCard.draft();
-        var checked = Model.parse(JSON.stringify(saveDraft), null);
+        var checked = Model.parse(JSON.stringify(settingsCard.draft()), null);
         if (checked.error) { settingsError = checked.error; return; }
         settingsSaving = true; saveWatchdog.restart();
         if (checked.config.shortcut !== settingsCard.original.shortcut || checked.config.desktopRightClick !== settingsCard.original.desktopRightClick
@@ -397,10 +299,6 @@ Item {
     }
     function failSettingsSave(message) {
         settingsSaving = false; settingsReloadPending = false; saveWatchdog.stop(); settingsError = message;
-        if (!settingsOpen) {
-            edgeHandle.livePosition = config.touchPosition === undefined ? 0.7 : config.touchPosition;
-            Quickshell.execDetached(["notify-send", "Orb", message]);
-        }
     }
     function finishSettingsSave() {
         if (!settingsSaving) return;
@@ -417,10 +315,6 @@ Item {
     }
     function status() {
         return JSON.stringify({ opened: opened, positioned: positioned, selected: selected,
-            inputMode: config.inputMode, touchEnabled: touchEnabled, touchSession: touchSession,
-            touchScreen: touchScreenName, touchPage: touchHome.page,
-            touchReady: touchPanel.contentReady, touchError: touchBackend.error,
-            touchCapabilities: touchBackend.capabilities, keyboardSpace: touchBackend.keyboardSpace,
             keyboard: keyboardMode, x: wheel.x, y: wheel.y, diameter: wheel.width,
             iconsOnly: true, selectionCaption: hint.text,
             captionFontSize: hint.font.pixelSize, footerHeight: panel.placement.footer,
@@ -484,7 +378,7 @@ Item {
                     return;
                 }
                 var document = JSON.parse(text());
-                var merged = Model.mergeSettings(document, root.saveOriginal, root.saveDraft);
+                var merged = Model.mergeSettings(document, settingsCard.original, settingsCard.draft());
                 if (merged.error) {
                     root.failSettingsSave(merged.error); return;
                 }
@@ -571,17 +465,13 @@ Item {
         function onAppsChanged() {
             root.appRevision++;
             if (root.settingsOpen) settingsCard.choices = root.settingsChoices();
-            touchHome.refreshApps();
         }
     }
     Connections {
         target: panel
         function onContentReadyChanged() { if (panel.contentReady) root.updateGestureSelection(); }
         function onContentRevealedChanged() {
-            if (panel.contentRevealed) {
-                root.updateGestureSelection(); root.finishGesture();
-                if (root.settingsOpen) Qt.callLater(touchBackend.raiseKeyboard);
-            }
+            if (panel.contentRevealed) { root.updateGestureSelection(); root.finishGesture(); }
         }
     }
     Process {
@@ -608,31 +498,11 @@ Item {
         function status(): string { return root.status(); }
     }
     OrbOverlay {
-        id: touchPanel
-        shown: root.opened && root.touchSession && !root.settingsOpen
-        requestedScreen: root.touchScreenName
-        respectReserved: true
-        shownKeyboardFocus: WlrKeyboardFocus.OnDemand
-        WlrLayershell.namespace: "omarchy-orb-touch"
-        onContentRevealedChanged: if (contentRevealed) Qt.callLater(touchBackend.raiseKeyboard)
-        TouchHome {
-            id: touchHome
-            x: Math.max(8, (parent.width - width) / 2); y: 8
-            width: Math.min(900, Math.max(1, parent.width - 16))
-            height: Math.max(1, parent.height - 16 - (touchBackend.keyboardSpace ? Math.min(330, parent.height * 0.42) : 0))
-            controller: root; backend: touchBackend; screenName: root.touchScreenName
-            onDismissed: root.dismiss()
-            onSettingsRequested: slot => root.editTouchSlot(slot)
-        }
-    }
-    OrbOverlay {
         id: panel
-        shown: root.opened && (!root.touchSession || root.settingsOpen)
-        requestedScreen: root.touchSession ? root.touchScreenName : ""
-        respectReserved: root.settingsOpen
+        shown: root.opened
         preferPointerScreen: !!root.gesture
         openingPointer: root.pointer
-        shownKeyboardFocus: root.settingsOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.Exclusive
+        shownKeyboardFocus: root.opened ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
         WlrLayershell.namespace: "omarchy-plugin-orb"
         readonly property var monitorData: targetMonitor ? targetMonitor.lastIpcObject : ({})
         readonly property var placement: Model.placement(
@@ -803,45 +673,22 @@ Item {
                 }
             }
         }
-        Row {
-            visible: root.opened && !root.settingsOpen && !root.touchSession
-            x: 12; y: (panel.monitorData.reserved || [0,0,0,0])[1] + 12; spacing: 6; z: 2
-            Controls.ComboBox {
-                width: Math.min(200,panel.width - 110); height: 48
-                model: root.config.wheels || []; textRole: "name"
-                currentIndex: model.findIndex(function(w) { return w.id === root.config.activeWheel; })
-                enabled: !root.settingsSaving
-                Accessible.name: "Active Orb wheel"
-                onActivated: index => root.switchWheel(model[index].id)
-            }
-            TouchButton { text: "Search"; onClicked: root.search() }
-        }
-        EditorLabel {
-            visible: root.opened && !root.settingsOpen && !root.touchSession && touchBackend.error !== ""
-            x: 12; y: (panel.monitorData.reserved || [0,0,0,0])[1] + 66; width: Math.min(500,panel.width-24)
-            text: touchBackend.error; wrapMode: Text.WordWrap; z: 2
-        }
         SettingsPanel {
             id: settingsCard
             version: root.manifest ? String(root.manifest.version || "") : ""
             visible: root.opened && root.positioned && root.settingsOpen
-            readonly property var reserved: panel.respectReserved ? [0, 0, 0, 0] : panel.monitorData.reserved || [0, 0, 0, 0]
+            readonly property var reserved: panel.monitorData.reserved || [0, 0, 0, 0]
             readonly property rect availableArea: Qt.rect(reserved[0] + 12, reserved[1] + 12,
                 Math.max(1, panel.width - reserved[0] - reserved[2] - 24),
-                Math.max(1, panel.height - reserved[1] - reserved[3] - 24 - (touchBackend.keyboardSpace ? Math.min(330, panel.height * 0.42) : 0)))
+                Math.max(1, panel.height - reserved[1] - reserved[3] - 24))
             width: Math.min(Commons.Style.space(680), availableArea.width)
             maximumHeight: availableArea.height
             x: Math.round(availableArea.x + (availableArea.width - width) / 2)
             y: Math.round(availableArea.y + (availableArea.height - height) / 2)
             appLibrary: root.appLibrary
             busy: root.settingsSaving
-            error: root.settingsError || root.setupError || touchBackend.error
+            error: root.settingsError || root.setupError
             setupFailed: root.setupError !== ""
-            touchFriendly: root.touchSession
-            touchStatus: touchBackend.capabilities
-            keyboardShown: touchBackend.keyboardSpace
-            onKeyboardRequested: touchBackend.keyboard(true)
-            onKeyboardToggled: touchBackend.keyboard(!touchBackend.keyboardSpace)
             onRetrySetup: root.requestSetup()
             onSaveRequested: root.saveSettings()
             onCanceled: root.cancelSettings()

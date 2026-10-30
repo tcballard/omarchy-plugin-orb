@@ -1,25 +1,13 @@
 # Changelog
 
-## 0.3.0 — in development
+## 0.3.0 — release candidate
 
-- Switch between named wheels with fixed shortcut positions; create, rename and manage them in Settings → Wheels.
-- Save app/workspace setups with normal tiling or equal columns, and split two touch-selected windows with ratios and side swapping.
-- Export/import wheels with bundled custom icons and an explicit command review. Search opens Oma-Cast.
-- Discover nine additional installed agents, retaining offline discovery and the existing default agent.
-- Cover overlay output selection, deferred reveal, close races, reserved geometry and hotplug with regression tests.
+- Choose a built-in icon or local SVG, PNG, JPEG or WebP image for custom commands and submenus, including a file chooser.
+- Open Orb with an optional extra mouse button: tap to keep it open, or hold, point and release to launch. Centre/outside releases cancel; submenus remain open for a second selection.
+- Discover nine additional installed coding agents without installing software or changing the default agent.
+- Retain desktop keyboard/right-click controls and cover output selection, reveal timing and overlay lifecycle regressions.
 
-- Open a touch home from a movable edge button or optional Orb bar entry, on the selected display.
-- Use labelled radial favourites, left/right layouts, adjustable target sizes, hold-to-edit and optional drag selection; small views retain a scrollable grid of large targets.
-- Browse apps and open Oma-Cast search; switch, restore, maximise, move and confirm-close windows without keyboard shortcuts.
-- Control brightness, sound, playback, network and provider-backed rotation; open an enabled on-screen keyboard for Orb’s text fields.
-- Choose Desktop, persistent Touch, or sensor-backed Automatic mode. Preserve existing desktop configuration and custom actions.
-- Keep keyboard space available, remap the keyboard above reopened panels, and cancel stale or interrupted touch actions.
-
-- Choose from more icons or use a local image for custom commands and submenus, now with a file chooser and larger editor controls.
-
-- Use an optional extra mouse button to open Orb anywhere. Tap to keep the wheel open, or hold, move and release to launch a shortcut. Centre and outside releases cancel; submenus stay open for a second selection.
-- Configure the button in Opening with conflict checks and without taking over left, right or middle click. Thanks to Michal Mazurek for the original mouse-button contribution.
-- Touch and mouse gestures need live Omarchy acceptance before release. ARM64/iPad hardware and secure touch unlock are not yet verified.
+Thanks to Michal Mazurek for the original extra-button contribution. Touch/tablet navigation is planned for v0.4.0. Named wheels, import/export, saved work setups and split/swap controls are deferred to later releases.
 
 ## 0.2.0 — 2026-10-23
 

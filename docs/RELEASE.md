@@ -1,30 +1,23 @@
-# Orb v0.3.0 development branch
+# Orb v0.3.0 release candidate
 
-The release branch combines touch navigation, provider integration, custom icons
-and the extra-button mouse gesture. The normal install command tracks `main`.
-The version is not tagged or published.
+This candidate contains custom icons with a local file chooser, optional extra mouse-button gestures, expanded installed-agent discovery and desktop overlay fixes. It exposes only the desktop menu. Touch/tablet navigation belongs to v0.4.0; named wheels, transfers, saved work setups and split/swap controls are deferred further.
 
-[Current acceptance](ACCEPTANCE.json) records the tested source and remaining
-gates. [v0.2.0 evidence](history/v0.2.0-ACCEPTANCE.json) is historical and does not
-establish acceptance for this candidate. Portable checks, QML parsing and Qt
-input tests with host stubs do not establish layer-shell focus, physical touch,
-real provider compatibility or iPad support.
+The candidate is prepared on `release/v0.3.0`. The existing `v0.4.0` working checkout is preserved separately. Public installation and updates still track `main` (v0.2.0 when checked on 2026-10-30). No v0.3.0 tag or published release has been created by this preparation.
 
-Before tagging, run the native editor, gesture, upgrade and app-library checks
-in an owned Omadev nest, then the [touch QA handoff](TOUCH.md#native-qa-handoff)
-on target hardware. Record source SHA, shell/compositor versions, provider
-versions, architecture and display/scale/rotation details. Update acceptance
-only with observed results. Runtime changes invalidate earlier acceptance.
+## Prepared evidence
 
-The inspected Omarchy lock screen has no on-screen keyboard. Secure login and
-unlock, suspend/resume, touch mapping and output selection must work before
-claiming a complete keyboard-free tablet session or proposing Orb as the
-official tablet default. Do not bypass authentication with a normal overlay.
+Runtime candidate: `188c502a8a16df6b95fcaf91889819e0b39f60c6`. Model/editor tests, eight Node test files, Qt custom-icon checks (5 passes), QML parsing, manifest validation and clean static release preflight pass. `docs/ACCEPTANCE.json` binds these results to the candidate.
 
-`scripts/archive.mjs` requires source-bound acceptance, a matching annotated tag
-and a clean checkout. Its existing pending-live override additionally requires
-explicit per-candidate release authorization; none is recorded for this work.
-Do not tag or update the marketplace snapshot from portable evidence alone.
+The archive fixture is blocked by a child-process `EPERM`; direct desktop acceptance is still unrecorded; shell Git cannot resolve GitHub for a push or CI run. These gates remain open. No release assets or version tag have been published.
 
-[Release notes](RELEASE-NOTES.md) remain a draft. The original published
-[v0.1.1 release record](history/v0.1.1-RELEASE.md) is retained separately.
+## Before publication
+
+- Pass `./tests/native`, Qt editor tests, strict plugin validation and release preflight on the exact committed candidate.
+- Complete the [direct desktop test guide](DESKTOP-TEST.md) on your normal Omarchy desktop. Omadev is optional; only the existing automated `*-live.cjs` harnesses require an owned nest. Record manual results for icons, gestures, focus, binding conflicts, reload and settings persistence.
+- Verify fresh installation, upgrade and removal preserve settings and unrelated configuration. Test real installed-agent launches without submitting a prompt or changing the default.
+- Record source SHA, shell/compositor versions and display/architecture scope in `ACCEPTANCE.json`. Previous candidate evidence is historical, not acceptance for this release.
+- Require green CI and accepted source on `main`, then follow [Cut v0.3.0](CUT-RELEASE.md). The workflow validates the archive before pushing the immutable annotated tag, creates a draft, then downloads and checks its assets. You publish the verified draft.
+
+The archive builder requires source-bound acceptance and a clean tagged checkout. There is no authorization to waive pending native checks. Historical v0.2.0 acceptance remains in `history/v0.2.0-ACCEPTANCE.json`.
+
+For the copy-paste installation and rollback commands, use [Desktop testing](DESKTOP-TEST.md). For acceptance recording, merging, workflow inputs and publication, use [Cut v0.3.0](CUT-RELEASE.md).

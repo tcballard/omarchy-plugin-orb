@@ -8,26 +8,9 @@ Portable checks (Node 22+, Bash, jq, Lua 5.4 or texlua; no npm dependencies):
 
 This retains the starter identity/CI checks and adds geometry/config tests. On Omarchy, `./tests/native` also runs the installed manifest validator and Qt's QML parser. Parsing is not runtime verification.
 
-For v0.3.0, CI also runs Qt Quick Test with a real Qt event loop and explicit
-theme/UI stubs. It exercises mouse and synthetic touch sequences, grid fallback,
-hold-to-edit, cancellation, navigation, search, keyboard requests, window close
-confirmation and compact layouts:
-
-```bash
-QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software /usr/lib/qt6/bin/qmltestrunner -input tests/qml -import tests/qml/stubs
-```
-
-This needs Qt Quick, Controls, Templates, Window, Workerscript and QtTest QML
-modules. It does not load Quickshell, a real shell facade or a keyboard provider.
-The Button/TextField stubs represent only the host component API.
-`tests/touch.test.cjs` covers geometry, gesture state, legacy/concurrent settings,
-helper argument validation, stale resources, minimised-window restoration and
-enabled-provider discovery. Use the [native QA handoff](TOUCH.md#native-qa-handoff)
-for physical touch and iPad acceptance.
-
 Install from main with `omarchy plugin add https://github.com/tcballard/omarchy-plugin-orb.git --enable`. For a committed development checkout, use the supported local Git URL with `omarchy plugin add "$PWD" --enable --yes`. Normal updates use `omarchy plugin update io.github.tcballard.orb`; remove with `omarchy plugin remove io.github.tcballard.orb`. The compatibility `./install` and `./uninstall` wrappers only forward to the native manager. No post-install terminal command is needed.
 
-The current settings acceptance harness runs **only in an owned omadev nest**:
+Native acceptance may be performed manually on the host desktop using [DESKTOP-TEST.md](DESKTOP-TEST.md). Omadev is optional. The existing automated settings harness itself runs **only in an owned omadev nest**:
 
 ```bash
 omadev ensure 4 --owner orb-settings --plugin "$PWD"
@@ -93,6 +76,4 @@ Historical v0.1 check: `node tests/expanded-slots-live.cjs` starts with a six-sl
 
 `node tests/shapes-live.cjs` runs only in an owned nest. It checks Circle/Polygon draft, Cancel and save/reopen; removal down to five slots; polygon preview dragging; real pointer sectors and empty corners for five through eight entries; the circular centre; and three/two-entry submenus with back navigation. Captures and runtime hashes stay under ignored `artifacts/`. `tests/shapes.test.cjs` checks legacy defaults, shape persistence and validation, slot limits, and polygon hits against an independent convex-polygon check.
 
-`tests/surface.test.mjs` evaluates the actual OrbOverlay lifecycle handlers with controlled screen/monitor state. It covers focused/pointer/explicit output choice, scale/mapping readiness, deferred reveal and close races, reserved touch geometry, hotplug and no-output cases. This completes the portable coverage from PR #15, not a real layer-shell test.
-
-`tests/wheels.test.cjs` and extended touch helper tests cover named-wheel merges, review-bound import/export, saved app launches and window pairs. Qt exercises WheelLibrary drafts with process stubs; no helper is executed by those UI tests. See [WHEELS.md](WHEELS.md) and [AGENTS-11.md](AGENTS-11.md) for native follow-up.
+The release also runs Qt editor checks with `QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software QT_QPA_PLATFORMTHEME= QT_STYLE_OVERRIDE=Basic /usr/lib/qt6/bin/qmltestrunner -input tests/qml -import tests/qml/stubs`. These use host UI stubs and do not establish native shell acceptance. Agent and overlay fixtures remain portable coverage; see `docs/AGENTS-11.md`.

@@ -6,6 +6,8 @@ Controls.Button {
     property bool bordered: false
     property bool selected: false
     property bool leftAlign: false
+    property string tooltipText: ""
+    property bool hasCursor: false
     property color foreground: "white"
     property string fontFamily: "sans-serif"
     property real fontSize: 14
