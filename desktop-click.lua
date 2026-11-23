@@ -5,6 +5,12 @@ local function contains(p, x, y, w, h, pad)
   pad = pad or 0
   return p.x >= x - pad and p.y >= y - pad and p.x < x + w + pad and p.y < y + h + pad
 end
+-- Hyprland 0.57.1 reports no id for named and special workspaces; use the name.
+local function sameWorkspace(a, b)
+  if not a or not b then return false end
+  if a.id ~= nil and b.id ~= nil then return a.id == b.id end
+  return a.name ~= nil and a.name == b.name
+end
 local function axis(value, name, index)
   if type(value) ~= "table" then return nil end
   return value[name] or value[index]
@@ -18,7 +24,7 @@ return hl.bind("mouse:273", function()
   if not workspace or monitor.active_special_workspace then return pass end
   -- No desktop actions through application bounds, including window borders.
   for _, window in ipairs(hl.get_windows({ mapped = true })) do
-    local on_desktop = window.pinned or (window.workspace and window.workspace.id == workspace.id)
+    local on_desktop = window.pinned or sameWorkspace(window.workspace, workspace)
     if on_desktop and window.visible and not window.hidden and contains(p,
         axis(window.at, "x", 1), axis(window.at, "y", 2),
         axis(window.size, "x", 1), axis(window.size, "y", 2), 8) then

@@ -37,4 +37,11 @@ assert(not callback().ok) -- a focus-taking overlay blocks
 layers={wallpaper,{mapped=true,layer=2,namespace="almost",keyboard_interactivity=0,x=0,y=0,w=1919,h=1200}}
 assert(not callback().ok) -- only an exact full-monitor host is skipped
 layers={host}; assert(not callback().ok) -- no wallpaper: fail closed
+-- Named/special workspaces have no id; a scratchpad window must not block a named desktop.
+local monitorAt=hl.get_monitor_at_cursor
+hl.get_monitor_at_cursor=function() return {name="eDP-1",active_workspace={name="orb-test"}} end
+layers={wallpaper}; windows={{visible=true,hidden=false,workspace={name="special:scratchpad"},at={x=800,y=400},size={x=300,y=300}}}
+assert(callback().ok)
+windows[1].workspace={name="orb-test"}; assert(not callback().ok)
+hl.get_monitor_at_cursor=monitorAt
 print('PASS: desktop-only right-click; app/layer clicks pass through; unknown geometry fails closed')
