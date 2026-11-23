@@ -15,14 +15,17 @@ in an owned Omadev nest, then the [touch QA handoff](TOUCH.md#native-qa-handoff)
 on target hardware. Record source SHA, shell/compositor versions, provider
 versions, architecture and display/scale/rotation details. Update acceptance
 only with observed results. Runtime changes invalidate earlier acceptance.
+After the recorded checks pass on the tree being accepted, record its exact
+runtime files with `node scripts/runtime-hashes.mjs --write`; without `--write`
+it lists stale entries. Never refresh the hashes without re-running the checks.
 
 The inspected Omarchy lock screen has no on-screen keyboard. Secure login and
 unlock, suspend/resume, touch mapping and output selection must work before
 claiming a complete keyboard-free tablet session or proposing Orb as the
 official tablet default. Do not bypass authentication with a normal overlay.
 
-`scripts/archive.mjs` requires source-bound acceptance, a matching annotated tag
-and a clean checkout. Its existing pending-live override additionally requires
+`scripts/archive.mjs` requires source-bound acceptance with current runtime
+hashes, a matching annotated tag and a clean checkout. Its existing pending-live override additionally requires
 explicit per-candidate release authorization; none is recorded for this work.
 Do not tag or update the marketplace snapshot from portable evidence alone.
 

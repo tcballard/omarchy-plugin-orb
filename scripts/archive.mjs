@@ -4,6 +4,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { root, readJSON, hash } from './common.mjs';
 import { check } from './check.mjs';
+import { runtimeHashes, staleHashes } from './runtime-hashes.mjs';
 
 try {
   const c=check();
@@ -33,6 +34,9 @@ try {
   git('merge-base','--is-ancestor',a.input_commit,'HEAD');
   const changed=git('diff','--name-only',a.input_commit,'HEAD').split('\n').filter(Boolean);
   if(changed.some(f=>!f.startsWith('docs/')&&!['README.md','CREDITS.md'].includes(f)))throw Error('Runtime/build inputs changed after acceptance');
+  // The recorded evidence must describe exactly these runtime files.
+  const stale=staleHashes(a.runtime_sha256,runtimeHashes());
+  if(stale.length)throw Error(`Acceptance runtime_sha256 is stale (${stale[0]}); see scripts/runtime-hashes.mjs`);
   if(fs.readFileSync(path.join(root,'VERSION'),'utf8').trim()!==tag.slice(1))throw Error('VERSION must match tag');
   if(readJSON(path.join(root,'manifest.json')).version!==tag.slice(1))throw Error('Manifest version must match tag');
   const out=path.join(root,'dist');fs.mkdirSync(out,{recursive:true});
