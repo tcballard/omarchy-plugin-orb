@@ -7,7 +7,9 @@ if(onHost)require('./host-desktop.cjs');
 else assert.ok(process.env.OMADEV_SLOT && process.env.OMADEV_OWNER,'Run through omadev, or set ORB_LIVE_HOST=1 on an idle host desktop');
 const repo=path.resolve(__dirname,'..'),id='io.github.tcballard.orb';
 const run=(command,...args)=>exec(command,args.map(String),{encoding:'utf8',timeout:15000}).trim();
-const json=(...args)=>JSON.parse(run(...args)),ipc=(...args)=>run('omarchy-shell',...args),status=()=>JSON.parse(ipc(id,'status'));
+const json=(...args)=>JSON.parse(run(...args)),ipc=(...args)=>run('omarchy-shell',...args),status=()=>{
+    // Report Settings in monitor coordinates: the overlay starts below reserved space (the bar) while Settings is open.
+    const s=JSON.parse(ipc(id,'status'));if(s.settingsOpen){s.settingsX+=s.surfaceX||0;s.settingsY+=s.surfaceY||0;}return s;};
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function until(check,message){for(let i=0;i<70;i++){if(check())return;await sleep(80);}throw Error(message||'Timed out');}
 const key=value=>run('wtype','-s','50','-k',value,'-s','50');

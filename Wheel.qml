@@ -605,6 +605,9 @@ Item {
                                   draftChildOrigins: settingsCard.childOrigins,
                                   setupReady: bindings.ready,
                                   setupError: bindings.error,
+                                  // Overlay origin on the monitor; non-zero while Settings respects reserved space.
+                                  surfaceX: panel.respectReserved ? (panel.monitorData.reserved || [0])[0] : 0,
+                                  surfaceY: panel.respectReserved ? (panel.monitorData.reserved || [0, 0])[1] : 0,
                                   settingsX: settingsCard.x,
                                   settingsY: settingsCard.y,
                                   settingsWidth: settingsCard.width,
