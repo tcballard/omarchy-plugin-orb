@@ -15,7 +15,13 @@ const key=k=>run('wtype','-s','80','-k',k,'-s','80');
 const isOrb=b=>/^(Orb shortcut wheel|Orb on empty desktop|Orb mouse button) \[orb:/.test(b.description||'');
 const installUrl=process.env.ORB_INSTALL_URL||'https://github.com/tcballard/omarchy-plugin-orb.git';
 const unrelatedBindings=text=>text.split('\n').filter(line=>line!=='require("orb") -- Orb shortcut wheel').join('\n').trimEnd();
-const unrelatedShell=text=>{const s=JSON.parse(text);s.plugins=(s.plugins||[]).filter(p=>p.id!==id);return s;};
+// Removing Orb also removes its own plugin entry and bar widget; everything else must survive.
+const unrelatedShell=text=>{
+  const s=JSON.parse(text);s.plugins=(s.plugins||[]).filter(p=>p.id!==id);
+  for(const [section,items] of Object.entries(s.bar?.layout||{}))
+    if(Array.isArray(items))s.bar.layout[section]=items.filter(item=>(item?.id??item)!==id);
+  return s;
+};
 const report={date:new Date().toISOString(),input_commit:run('git','rev-parse','HEAD'),omarchy_commit:run('git','-C',process.env.OMARCHY_PATH,'rev-parse','HEAD'),checks:[]};
 const pass=name=>{report.checks.push({name,pass:true});console.log('PASS: '+name);};
 const backup=path.join(repo,'artifacts','lifecycle-'+Date.now());fs.mkdirSync(backup,{recursive:true,mode:0o700});
