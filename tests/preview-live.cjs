@@ -1,3 +1,4 @@
+require('./host-desktop.cjs');
 // Real still on an empty workspace; no recording or configuration edits.
 const {execFileSync}=require('node:child_process');
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');

@@ -1,3 +1,4 @@
+require('./host-desktop.cjs');
 const {execFileSync:e}=require('node:child_process');const fs=require('node:fs'),assert=require('node:assert/strict'),path=require('node:path');const repo=path.resolve(__dirname,'..');
 const run=(c,...a)=>e(c,a.map(String),{encoding:'utf8',timeout:15000}).trim(),json=(c,...a)=>JSON.parse(run(c,...a)),id='io.github.tcballard.orb',ipc=(...a)=>run('omarchy-shell',...a),status=()=>JSON.parse(ipc(id,'status'));const sleep=t=>new Promise(r=>setTimeout(r,t));async function until(f,m){for(let i=0;i<80;i++){if(f())return;await sleep(100);}throw Error(m||'Timed out');}const key=k=>run('wtype','-s','75','-k',k,'-s','75');
 const config=process.env.HOME+'/.config/omarchy/orb.json',original=fs.readFileSync(config,'utf8'),actions=JSON.parse(original).actions;const starter=actions.findIndex(a=>a.icon==='create');assert.ok(starter>=0);assert.ok(actions.length>=6&&actions.length<=8);

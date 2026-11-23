@@ -7,6 +7,7 @@ This is Orb, an Omarchy plugin project. Read README.md and ARCHITECTURE.md befor
 - Preserve the centered README title, single category badge where applicable, and prominent original-project credit. Do not claim a screenshot, package listing or supported version without evidence.
 - Keep settings owned by this project. Removal must preserve user data and unrelated desktop configuration.
 - Use focused tests for changed behaviour. Portable checks do not establish live acceptance.
+- Live harnesses (`tests/*live.cjs`) are listed in docs/DEVELOPMENT.md#live-harnesses. Run nest ones only in an owned omadev nest; never run host-desktop ones or set `ORB_LIVE_HOST=1` without the owner's go-ahead.
 - SHA-pin workflow actions, minimize token permissions, keep authoring files out of installed runtime payloads.
 - Keep release notes outcome-focused using Merge and Tell guidance when available.
 - Never edit .template/blueprint to change an initialized product; those files retain starter provenance. Edit product files directly.

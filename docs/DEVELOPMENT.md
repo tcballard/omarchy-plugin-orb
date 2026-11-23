@@ -27,6 +27,27 @@ for physical touch and iPad acceptance.
 
 Install from main with `omarchy plugin add https://github.com/tcballard/omarchy-plugin-orb.git --enable`. For a committed development checkout, use the supported local Git URL with `omarchy plugin add "$PWD" --enable --yes`. Normal updates use `omarchy plugin update io.github.tcballard.orb`; remove with `omarchy plugin remove io.github.tcballard.orb`. The compatibility `./install` and `./uninstall` wrappers only forward to the native manager. No post-install terminal command is needed.
 
+## Live harnesses
+
+None of these run in `./tests/run` or CI. Nest harnesses refuse the host
+desktop; host harnesses exit unless `ORB_LIVE_HOST=1` is set. Agents should
+not run host harnesses or set that variable without the owner's go-ahead.
+
+| Where | Harness | Covers |
+|---|---|---|
+| Owned nest | `editor-live.cjs` | Settings editor, catalog, undo, appearance |
+| Owned nest | `gesture-live.cjs` | Extra mouse-button gesture |
+| Owned nest | `release-live.cjs` | Plugin-manager upgrade from v0.1.1, removal, fresh install |
+| Owned nest | `app-library-live.cjs` | App catalog save and launch |
+| Owned nest | `files-live.cjs` | Files menu and Nautilus locations |
+| Owned nest | `shapes-live.cjs` | Circle/polygon shapes, five to eight slots |
+| Host desktop | `live.cjs` | Main wheel, actions, theme, agents |
+| Host desktop | `compact-live.cjs` | Wheel sizes and screen-edge clearance |
+| Host desktop | `extras-live.cjs` | Make something cool submenu |
+| Host desktop | `rightclick-live.cjs` | Desktop right-click passthrough |
+| Host desktop | `preview-live.cjs` | README preview still |
+| Host desktop | `lifecycle-live.cjs` | Remove and reinstall the live Orb |
+
 The current settings acceptance harness runs **only in an owned omadev nest**:
 
 ```bash
@@ -56,13 +77,13 @@ After committing a clean candidate, `node tests/release-live.cjs` runs only in a
 
 `node tests/files-live.cjs` also requires an owned nest. It exercises the legacy Files shortcut, both radial pages, pointer/keyboard navigation and back behaviour, then opens all nine locations in native Nautilus windows. It checks each actual location through FileManager1 D-Bus properties, including Recent, Starred and Trash, and uses private XDG folders containing spaces. Before writing user-directory fixtures, it replaces any shared configuration symlink with a private file, restoring the original link afterward. It closes only the windows it created and restores the nest’s Orb and user-directory configuration. Portable `tests/files.test.cjs` checks command arguments, folder resolution, missing locations, menu validation and compatibility without launching a real file manager.
 
-The older `settings-live.cjs`, `slots-live.cjs` and `expanded-slots-live.cjs` harnesses record the v0.1 panel's keyboard paths. Use `editor-live.cjs` for the new settings UI. The remaining opt-in live harnesses below control the actual desktop; they are not part of the portable suite and should be run only with the desktop idle or adapted to a nest.
+The host-desktop harnesses below control the actual desktop. They are not part of the portable suite and exit unless `ORB_LIVE_HOST=1` is set; run them only with the desktop idle.
 
 The opt-in live harness controls the actual desktop. It saves/restores workspace, focused window and pointer, uses an empty named workspace, launches real actions and closes only newly created test windows:
 
 ```bash
 ./tests/build-pointer
-ORB_POINTER="$PWD/artifacts/input/pointer" node tests/live.cjs --actions --theme --agents
+ORB_LIVE_HOST=1 ORB_POINTER="$PWD/artifacts/input/pointer" node tests/live.cjs --actions --theme --agents
 ```
 
 The pointer is a test-only C Wayland client, never a runtime dependency. Building it needs wayland-scanner, wayland-client, pkg-config and a C compiler. Keyboard input uses wtype. This XPS harness requires scale 1 and no rotation; unit tests cover logical geometry independently. The theme option applies another palette through real shell IPC and restores it in cleanup without changing theme/app files. The actions option exercises six real launchers. A browser can reuse an existing window; the harness never closes that existing window or its tabs.
@@ -73,15 +94,9 @@ Final physical-key check: Super+Alt+O, Right, Enter; then repeat with Escape and
 
 The optional `--agents` check uses real pointer clicks to open Agents and launch Codex, verifies the default-agent file is unchanged, closes only its new test terminal and captures still images. It sends no prompt or task. No video recording is performed.
 
-Focused circular-menu check: `ORB_POINTER="$PWD/artifacts/input/pointer" node tests/live.cjs --menus-only --agents --settings`. The harness paces keyboard input and waits after surface mapping for compositor focus delivery.
-
-Historical v0.1 check: `node tests/settings-live.cjs` exercised the old native settings panel. It changes size and animation through the UI, verifies Cancel and Save, restores the original values, checks screen bounds and verifies that no configuration editor opens. It assumes the XPS scale-1 layout used by the main live harness.
-
-Historical v0.1 check: `node tests/slots-live.cjs` exercised all six slot drafts, cancellation, an installed Files app save/launch, Postcard save/reopen/launch, and panel bounds. It restores the configuration it started with; `--apply-postcard` deliberately retains Postcard in slot four on success. Keep the desktop idle during this input-driven check. It captures stills only. The older full-action harness assumes the default six-slot layout; use focused checks when you have customized it.
+Focused circular-menu check: `ORB_LIVE_HOST=1 ORB_POINTER="$PWD/artifacts/input/pointer" node tests/live.cjs --menus-only --agents --settings`. The harness paces keyboard input and waits after surface mapping for compositor focus delivery.
 
 `./tests/native` also uses Lua to check desktop hit-testing and passthrough. `node tests/rightclick-live.cjs` checks real desktop right-click, left-click, the retained Super+right-click resize binding, and a Files context menu in a temporary workspace, then restores workspace/focus/pointer. Native binding contract: https://wiki.hypr.land/configuring/core/binds/#auto-consuming-binds-and-return--ok--false- .
-
-Historical v0.1 check: `node tests/expanded-slots-live.cjs` starts with a six-slot configuration, verifies cancel/add/save/reopen for seven and eight slots, all eight pointer hit regions, the eighth action launch, and removal back to six. It restores the starting configuration and captures stills only.
 
 `node tests/extras-live.cjs` checks a saved layout containing Make something cool: all pointer sectors, last-slot keyboard selection, its circular submenu and back navigation, and removal/Cancel without saving. It compares the starter prompts against the installed Agents panel and deliberately does not execute them.
 

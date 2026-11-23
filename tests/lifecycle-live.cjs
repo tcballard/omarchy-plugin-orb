@@ -1,3 +1,4 @@
+require('./host-desktop.cjs');
 // Opt-in real desktop removal/reinstallation. Always attempt reinstall after removal.
 const {execFileSync}=require('node:child_process');
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{createHash}=require('node:crypto');

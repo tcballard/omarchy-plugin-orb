@@ -1,3 +1,4 @@
+require('./host-desktop.cjs');
 const {execFileSync:e}=require('node:child_process');const fs=require('node:fs'),assert=require('node:assert/strict'),path=require('node:path');
 const repo=path.resolve(__dirname,'..');const run=(c,...a)=>e(c,a.map(String),{encoding:'utf8',timeout:15000}).trim();const json=(c,...a)=>JSON.parse(run(c,...a));
 const id='io.github.tcballard.orb',ipc=(...a)=>run('omarchy-shell',...a),status=()=>JSON.parse(ipc(id,'status'));const sleep=t=>new Promise(r=>setTimeout(r,t));

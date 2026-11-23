@@ -1,3 +1,4 @@
+require('./host-desktop.cjs');
 // Explicitly invoked, real desktop test. Uses virtual input, never mocks launchers.
 // ORB_POINTER must name an inspected Wayland virtual-pointer tool accepting
 // x y outputWidth outputHeight button (0 moves, 272 left-clicks).
