@@ -25,12 +25,27 @@ return hl.bind("mouse:273", function()
       return pass
     end
   end
+  local layers = hl.get_layers({ monitor = monitor })
+  local backgrounds = {}
+  for _, layer in ipairs(layers) do
+    if layer.mapped and layer.layer == 0 then backgrounds[#backgrounds + 1] = layer end
+  end
+  -- Omarchy hosts the bar and some plugins in full-monitor surfaces that take no
+  -- keyboard focus and mask input to their visible parts. Hyprland reports only
+  -- the surface size, so skip exactly those; any other layer still blocks.
+  local function inputMaskedHost(layer)
+    if layer.keyboard_interactivity ~= 0 then return false end
+    for _, b in ipairs(backgrounds) do
+      if layer.x == b.x and layer.y == b.y and layer.w == b.w and layer.h == b.h then return true end
+    end
+    return false
+  end
   local background = false
-  for _, layer in ipairs(hl.get_layers({ monitor = monitor })) do
+  for _, layer in ipairs(layers) do
     if layer.mapped and contains(p, layer.x, layer.y, layer.w, layer.h) then
       if layer.layer == 0 then
         background = true
-      else
+      elseif not inputMaskedHost(layer) then
         return pass
       end
     end

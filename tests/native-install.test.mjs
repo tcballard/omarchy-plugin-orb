@@ -118,6 +118,14 @@ for(const mode of ['none','reload','query','configerrors']) for(const hasBinding
       if(hasBindings)assert.equal(fs.readFileSync(path.join(config,'hypr/bindings.lua'),'utf8'),other+'require("orb") -- Orb shortcut wheel\n');
     }
   }));
+test('a v0.1.0 module with desktop right-click still migrates after desktop-click.lua changes',()=>fixture(({config,run,put})=>{
+  // The v0.1.0 installer appended its desktop-click.lua; recognise that exact text.
+  const v010=fs.readFileSync(path.join(root,'scripts/legacy-desktop-click-v0.1.0.lua'),'utf8');
+  put('omarchy/orb.json',JSON.stringify({...JSON.parse(example),desktopRightClick:true}));
+  put('hypr/orb.lua',legacy+v010);
+  const r=run();assert.equal(r.status,0,r.stderr);
+  assert.equal(fs.existsSync(path.join(config,'hypr/orb.lua')),false);
+}));
 test('extra-button registration, conflicts and lifecycle are safe',()=>fixture(({dir,run,put})=>{
   const base=JSON.parse(example);
   const capture=value=>{

@@ -32,7 +32,8 @@ if [[ -f $module ]] && [[ $(head -1 -- "$module") == "$marker" ]]; then
   if ! sed -n '2p' "$module" | grep -Eq '^o\.bind\("[A-Z0-9 +]+", "Orb shortcut wheel", \{ panel = "io\.github\.tcballard\.orb" \}\)$'; then
     rm -- "$expected"; echo 'Modified legacy orb.lua was preserved; review it before migration.' >&2; exit 1
   fi
-  if [[ $(wc -l < "$module") -gt 2 ]]; then sed 's/^return hl.bind/hl.bind/' "$repo/desktop-click.lua" >> "$expected"; fi
+  # Compare with the exact v0.1.0 text, which the runtime desktop-click.lua no longer matches.
+  if [[ $(wc -l < "$module") -gt 2 ]]; then cat -- "$repo/scripts/legacy-desktop-click-v0.1.0.lua" >> "$expected"; fi
   if ! cmp -s -- "$module" "$expected"; then
     rm -- "$expected"; echo 'Modified legacy orb.lua was preserved; review it before migration.' >&2; exit 1
   fi
