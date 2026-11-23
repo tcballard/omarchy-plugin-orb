@@ -183,7 +183,7 @@
   },
   "screenshots": [
     {
-      "file": "docs/v0.2.0-circle.png",
+      "file": "docs/history/v0.2.0-circle.png",
       "width": 436,
       "height": 493,
       "sha256": "48e0c2cf6046ee7b3958acc75d89400bf6201ce16ad4a195ccb3aaced776b803",
@@ -205,7 +205,7 @@
       "capture": "Native grim crop inside owned Omadev slot 5; visually inspected; no image generation or composition"
     },
     {
-      "file": "docs/v0.2.0-files.png",
+      "file": "docs/history/v0.2.0-files.png",
       "width": 436,
       "height": 493,
       "sha256": "1b9393a6ce7afcef4b9aeb87b9442075641d13aac4c5ba164427ae28ec145661",
@@ -238,7 +238,7 @@
       "capture": "Native grim crop inside owned Omadev slot 5; visually inspected; no image generation or composition"
     },
     {
-      "file": "docs/v0.2.0-appearance.png",
+      "file": "docs/history/v0.2.0-appearance.png",
       "width": 793,
       "height": 675,
       "sha256": "85c30dce9c418ae26f990a203ac557e030e05ef450c355fa617e336239c13431",

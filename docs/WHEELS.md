@@ -6,4 +6,4 @@ v0.4.0 keeps custom icons, extra mouse-button gestures, additional installed age
 
 Existing `wheels`, `activeWheel` and `setups` settings are preserved unchanged. The top-level `actions` projection remains the active shortcut layout. Editing it does not update archived wheel data. Previously saved Work setups menu slots show a deferred-feature message and can be replaced in Settings.
 
-The implementation remains recoverable from the v0.3.0 branch (last local candidate `db10153`). Reintroduction will need fresh design review, configuration reconciliation and native tests, especially the previously failing window-pair dispatches. No future version or delivery date is assigned.
+The implementation remains recoverable from commit `db10153` (local branch `dev/0.3-wheels`; `origin/v0.3.0` holds the earlier `827edf6`). Reintroduction will need fresh design review, configuration reconciliation and native tests, especially the previously failing window-pair dispatches. No future version or delivery date is assigned.

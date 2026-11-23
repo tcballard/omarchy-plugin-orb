@@ -74,7 +74,7 @@
     }
   ],
   "preview": {
-    "path": "docs/settings-preview.png",
+    "path": "docs/history/settings-preview.png",
     "sha256": "1e5e3a8e75e714b4491903698ff7096b3ed67beb11becae5aa7d49147dedc46e",
     "capture": "grim region of the actual settings surface in the owned omadev nest; default six shortcuts, original dark palette; no image editing"
   },
