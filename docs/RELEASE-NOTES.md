@@ -1,27 +1,29 @@
-Draft for Orb v0.4.0. Available on the development branch; not tagged or released.
+Orb v0.4.0 brings touch and tablet navigation to Omarchy, shows every installed coding agent with its own icon, and fixes Orb on current Omarchy and Hyprland.
 
-Orb focuses on custom icons, mouse-button gestures, installed agents and touch/tablet navigation for Omarchy.
+**Touch and tablet**
 
-- Defer named wheels, wheel import/export, saved work setups and split/swap controls to a future release; retain existing saved data.
-- Discover nine additional installed agents, retaining offline discovery and the existing default agent.
-- Show each installed agent's own mark (Antigravity, OpenCode, Qwen Code, Copilot, Cursor and others) from Omarchy's Agents panel instead of a generic icon.
-- List npm-installed agents such as OpenCode, Qwen Code, Kimi and Kilo in the Agents menu when Orb runs inside the shell.
-- Open Orb on desktop right-click under current Omarchy's full-screen bar, including on named workspaces.
-- Keep the extra-mouse-button gesture working after Orb reloads or updates on Hyprland 0.57.1, which no longer clears its release binding automatically.
-- Launch shortcuts and list installed agents when Orb is installed under a path containing spaces or other escaped characters.
-- Cover overlay output selection, deferred reveal, close races, reserved geometry and hotplug with regression tests.
-
-
-- Open it from a movable edge button or your bar. Tap labelled favourites, open Oma-Cast search and manage windows from the same surface.
+- Open a touch home from a movable edge button or your bar. Tap labelled favourites, open Oma-Cast search and manage windows from the same surface.
 - Choose a left/right fan or full wheel, larger targets and optional drag selection. Hold a favourite to edit it. Compact screens keep a scrollable grid of large targets.
 - Control brightness, sound, playback and network. Connect an enabled keyboard and Tablet Mode for typing, rotation and sensor-backed switching.
 - Choose Desktop, Touch or Automatic. Existing settings keep their desktop behaviour; iPads and tablets without a fold sensor use Touch.
-- Pick a custom icon from a local image, and use the larger shortcut editor controls. The optional extra mouse button supports tap-to-open or hold, point and release.
+- The shortcut and action editors use larger, touch-sized controls.
 
-Thanks to Michal Mazurek for the original extra-button contribution. Hardware and keyboard integrations use the existing Tablet Mode and OmaTouch projects.
+**Agents**
 
-Known Omarchy issue: if Orb's bar entry and an older menu entry are both in your shell settings, Disable leaves Orb loaded; run `omarchy plugin disable io.github.tcballard.orb` a second time until Omarchy fixes this.
+- Each installed agent shows its own mark from Omarchy's Agents panel: Antigravity, OpenCode, Qwen Code, Copilot, Cursor, Kimi, DeepSeek, MiniMax and more.
+- npm-installed agents such as OpenCode, Qwen Code, Kimi and Kilo now appear in the Agents menu.
 
-Physical touch, provider layering, ARM64/iPad hardware and the new mouse gesture still need native acceptance. Secure keyboard-free unlock needs support inside Omarchy’s lock screen. This release does not yet make Orb an official Omarchy default.
+**Fixes**
 
-[Deferred work](WHEELS.md) · [Setup and QA](TOUCH.md) · [Acceptance evidence](ACCEPTANCE.json)
+- Desktop right-click opens Orb again under current Omarchy's bar, including on named workspaces.
+- The extra mouse button keeps working after Orb reloads or updates on Hyprland 0.57.1.
+- Shortcuts and agents launch when Orb is installed under a path containing spaces.
+
+**Known issues**
+
+- If Orb's bar entry and an older menu entry are both in your shell settings, Disable leaves Orb loaded. Run `omarchy plugin disable io.github.tcballard.orb` a second time until Omarchy fixes this.
+- Physical touch, ARM64/iPad hardware and secure keyboard-free unlock are not yet verified. This release does not make Orb an official Omarchy default.
+
+Named wheels, import/export, saved work setups and split/swap controls are still deferred; existing saved data is kept. Hardware and keyboard integrations use the existing Tablet Mode and OmaTouch projects.
+
+[Touch setup and QA](https://github.com/tcballard/omarchy-plugin-orb/blob/v0.4.0/docs/TOUCH.md) · [Acceptance evidence](https://github.com/tcballard/omarchy-plugin-orb/blob/v0.4.0/docs/ACCEPTANCE.json) · [Changelog](https://github.com/tcballard/omarchy-plugin-orb/blob/v0.4.0/CHANGELOG.md)
