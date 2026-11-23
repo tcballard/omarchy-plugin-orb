@@ -60,7 +60,6 @@ FocusScope {
     function begin(config, catalog) {
         original = JSON.parse(JSON.stringify(config));
         touchOptions.begin(config);
-        wheelLibrary.begin(config);
         diameter = config.diameter; animation = config.animation; shape = config.shape || "circle";
         shortcut = config.shortcut || "SUPER + ALT + O"; desktopRightClick = config.desktopRightClick === true;
         mouseOpen = config.mouseOpen === true; mouseButtonText = String(config.mouseButton || 277);
@@ -73,7 +72,7 @@ FocusScope {
         openingHeight = 0;
         Qt.callLater(function() { slotNavigation.forceActiveFocus(); });
     }
-    function draft() { return Object.assign(touchOptions.draft(), {wheels:wheelLibrary.wheels,activeWheel:wheelLibrary.activeWheel,setups:wheelLibrary.setups}, { diameter: diameter, animation: animation, shape: shape, actions: actions,
+    function draft() { return Object.assign(touchOptions.draft(), { diameter: diameter, animation: animation, shape: shape, actions: actions,
         shortcut: shortcutCheck.error ? shortcut : shortcutCheck.value, desktopRightClick: desktopRightClick,
         mouseOpen: mouseOpen, mouseButton: mouseCheck.error ? mouseButtonText : mouseCheck.value,
         actionOrigins: actionOrigins, childOrigins: childOrigins }); }
@@ -90,8 +89,7 @@ FocusScope {
             else if (index === 0) slotNavigation.forceActiveFocus();
             else if (index === 1) sizeControl.forceActiveFocus();
             else if (index === 2) openingKey.forceActiveFocus();
-            else if (index === 3) touchOptions.forceActiveFocus();
-            else wheelLibrary.forceActiveFocus();
+            else touchOptions.forceActiveFocus();
         });
     }
     function editSlot(index) {
@@ -160,13 +158,7 @@ FocusScope {
     function changeKey(value) {
         var tokens = shortcut.split("+"); tokens[tokens.length - 1] = value.toUpperCase().trim(); shortcut = tokens.join(" + ");
     }
-    function requestSave() {
-        if (busy || shortcutCheck.error || activationError || editingSlot >= 0) return;
-        // Ctrl+S can arrive while a name field still owns focus. Finish its
-        // edit before the owner snapshots the draft, just as clicking Save does.
-        saveButton.forceActiveFocus();
-        saveRequested();
-    }
+    function requestSave() { if (!busy && !shortcutCheck.error && !activationError && editingSlot < 0) saveRequested(); }
     function previewStatus() {
         var p = preview.mapToItem(panel, 0, 0);
         return { x: p.x, y: p.y, diameter: preview.width, shape: preview.shape, dragging: preview.dragging, selected: selectedSlot };
@@ -221,18 +213,18 @@ FocusScope {
             width: parent.width; wrapMode: Text.WordWrap; opacity: 0.65
             text: panel.editingSlot >= 0 ? (panel.editingSlot === panel.actions.length ? "Add a shortcut to your wheel" : "Slot " + (panel.editingSlot + 1) + " · " + panel.positions[panel.editingSlot])
                 : panel.tab === 0 ? "Choose your shortcuts and put them where you want them."
-                : panel.tab === 1 ? "Make the wheel feel at home on your desktop." : panel.tab === 2 ? "Choose how you open Orb." : panel.tab === 3 ? "Set up navigation for your touchscreen." : "Manage wheels and saved work setups."
+                : panel.tab === 1 ? "Make the wheel feel at home on your desktop." : panel.tab === 2 ? "Choose how you open Orb." : "Set up navigation for your touchscreen."
         }
         Row {
             id: tabRow
             visible: panel.editingSlot < 0; width: parent.width; spacing: Commons.Style.space(6)
             Repeater {
-                model: ["Shortcuts", "Appearance", "Opening", "Touch", "Wheels"]
+                model: ["Shortcuts", "Appearance", "Opening", "Touch"]
                 delegate: EditorButton {
                     required property int index
                     required property string modelData
                     objectName: "orb-tab-" + index
-                    width: (header.width - parent.spacing * 4) / 5; text: modelData
+                    width: (header.width - parent.spacing * 3) / 4; text: modelData
                     selected: panel.tab === index; enabled: !panel.busy
                     onClicked: panel.selectTab(index)
                 }
@@ -468,17 +460,7 @@ FocusScope {
                 visible: panel.editingSlot < 0 && panel.tab === 3
                 width: parent.width; busy: panel.busy; status: panel.touchStatus
             }
-            WheelLibrary {
-            id: wheelLibrary
-            visible: panel.editingSlot < 0 && panel.tab === 4
-            width: parent.width; busy: panel.busy; choices: panel.choices
-            currentActions: panel.actions.map(function(a,i) {
-                var origin = panel.actionOrigins[i];
-                var originalWheel = (panel.original.wheels || []).filter(function(w) { return w.id === panel.original.activeWheel; })[0];
-                return origin >= 0 && originalWheel ? Model.mergeAction(originalWheel.actions[origin],panel.original.actions[origin],a,panel.childOrigins[i]) : a;
-            })
-        }
-        ActionEditor {
+            ActionEditor {
                 id: actionEditor
                 visible: panel.editingSlot >= 0; width: parent.width; height: visible ? implicitHeight : 0; busy: panel.busy
                 onChosen: (action, origins) => panel.chooseAction(action, origins)
@@ -495,7 +477,7 @@ FocusScope {
         Row {
             visible: panel.editingSlot < 0; width: parent.width; spacing: Commons.Style.space(8)
             EditorButton { objectName: "orb-cancel"; width: (parent.width - parent.spacing) / 2; text: "Cancel"; enabled: !panel.busy; onClicked: panel.canceled() }
-            EditorButton { id: saveButton; objectName: "orb-save"; width: (parent.width - parent.spacing) / 2; text: panel.busy ? "Saving…" : "Save"; selected: true; enabled: !panel.busy && !panel.shortcutCheck.error && !panel.activationError; onClicked: panel.requestSave() }
+            EditorButton { objectName: "orb-save"; width: (parent.width - parent.spacing) / 2; text: panel.busy ? "Saving…" : "Save"; selected: true; enabled: !panel.busy && !panel.shortcutCheck.error && !panel.activationError; onClicked: panel.requestSave() }
         }
     }
     Connections {

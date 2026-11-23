@@ -1,0 +1,27 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const model = require('../Model.js');
+const defaults = require('../config.example.json');
+
+test('v0.4 settings edits retain deferred data and the current shortcut projection', () => {
+  const document = structuredClone(defaults);
+  document.activeWheel = 'work';
+  document.wheels = [{id:'work', name:'Work', actions:structuredClone(document.actions), note:'keep'}];
+  document.setups = [{id:'coding', name:'Coding', apps:['terminal'], workspace:2, layout:'columns'}];
+  document.actions[0] = {label:'Work setups', icon:'app', menu:'setups', note:'keep slot'};
+  const original = model.parse(JSON.stringify(document), null);
+  assert.equal(original.error, '');
+  const draft = structuredClone(original.config);
+  draft.actions[1].label = 'My shortcut';
+  draft.diameter = 360;
+  const current = structuredClone(document);
+  current.wheels[0].note = 'concurrent metadata';
+  const result = model.mergeSettings(current, original.config, draft);
+  assert.equal(result.error, '');
+  assert.deepEqual(result.document.wheels, current.wheels);
+  assert.deepEqual(result.document.setups, current.setups);
+  assert.equal(result.document.activeWheel, 'work');
+  assert.deepEqual(result.document.actions[0], document.actions[0]);
+  assert.equal(result.document.actions[1].label, 'My shortcut');
+  assert.equal(result.document.diameter, 360);
+});

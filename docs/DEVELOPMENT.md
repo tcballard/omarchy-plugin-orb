@@ -8,7 +8,7 @@ Portable checks (Node 22+, Bash, jq, Lua 5.4 or texlua; no npm dependencies):
 
 This retains the starter identity/CI checks and adds geometry/config tests. On Omarchy, `./tests/native` also runs the installed manifest validator and Qt's QML parser. Parsing is not runtime verification.
 
-For v0.3.0, CI also runs Qt Quick Test with a real Qt event loop and explicit
+For v0.4.0, CI also runs Qt Quick Test with a real Qt event loop and explicit
 theme/UI stubs. It exercises mouse and synthetic touch sequences, grid fallback,
 hold-to-edit, cancellation, navigation, search, keyboard requests, window close
 confirmation and compact layouts:
@@ -39,14 +39,14 @@ node tests/editor-live.cjs
 
 The harness refuses the host desktop. It saves/restores the nest's Orb config, uses real Wayland pointer/drag and keyboard input, and exercises size presets, direct catalog-to-wheel assignment, cancelled drops, draft/cancel/save/reopen, metadata retention, keyboard reordering, opening controls and live binding updates, shortcut conflicts, custom command arguments, submenu edits and launches, six-to-eight shortcuts and screen edges. Appearance checks open six/eight-slot Settings at all corners and both side edges, verify the entire panel is centred within reserved screen space, and retain the opening frame through tab changes, presets and full slider drags. Commands launch only a local argv-recording fixture. Captures and JSON results stay under ignored `artifacts/`. `--appearance-only` checks that placement and sizing; `--catalog-only` also checks presets and direct assignment; `--submenu-only` narrows a failed submenu check. No video is recorded.
 
-For the v0.3.0 extra-button gesture, use an owned, single-monitor, scale-1 unrotated nest linked to this checkout:
+For the v0.4.0 extra-button gesture, use an owned, single-monitor, scale-1 unrotated nest linked to this checkout:
 
 ```bash
 ./tests/build-pointer
 node tests/gesture-live.cjs
 ```
 
-The script selects an unused extra-button code, temporarily replaces only the nest's Orb settings, launches a private recording fixture, and restores the settings and pointer in cleanup. It checks tap/dismiss, directional launch, centre cancellation, submenu opening and removing both bindings. It does not test a physical mouse, multiple monitors or a button pressed over a real application. Also test those manually on the target desktop, including a conflicting binding, application input, keyboard use, shell/compositor reload, disable/removal and monitor edges. This test has not yet been run for v0.3.0.
+The script selects an unused extra-button code, temporarily replaces only the nest's Orb settings, launches a private recording fixture, and restores the settings and pointer in cleanup. It checks tap/dismiss, directional launch, centre cancellation, submenu opening and removing both bindings. It does not test a physical mouse, multiple monitors or a button pressed over a real application. Also test those manually on the target desktop, including a conflicting binding, application input, keyboard use, shell/compositor reload, disable/removal and monitor edges. This test has not yet been run for v0.4.0.
 
 Every editor run also checks the installed version label and shortcut Undo: removal, keyboard/pointer reorder, additions, submenu edits and catalog assignments, retained origin identities, native text Undo, and preservation of appearance/opening drafts. Use `--undo-only` for that focused check.
 
@@ -95,4 +95,4 @@ Historical v0.1 check: `node tests/expanded-slots-live.cjs` starts with a six-sl
 
 `tests/surface.test.mjs` evaluates the actual OrbOverlay lifecycle handlers with controlled screen/monitor state. It covers focused/pointer/explicit output choice, scale/mapping readiness, deferred reveal and close races, reserved touch geometry, hotplug and no-output cases. This completes the portable coverage from PR #15, not a real layer-shell test.
 
-`tests/wheels.test.cjs` and extended touch helper tests cover named-wheel merges, review-bound import/export, saved app launches and window pairs. Qt exercises WheelLibrary drafts with process stubs; no helper is executed by those UI tests. See [WHEELS.md](WHEELS.md) and [AGENTS-11.md](AGENTS-11.md) for native follow-up.
+`tests/release-scope.test.cjs` checks preservation of deferred library data during settings edits. Touch helper tests verify that removed setup and pair operations cannot dispatch commands. See [AGENTS-11.md](AGENTS-11.md) for native agent follow-up.

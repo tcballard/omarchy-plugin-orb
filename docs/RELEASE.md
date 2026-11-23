@@ -1,4 +1,4 @@
-# Orb v0.3.0 development branch
+# Orb v0.4.0 development branch
 
 The release branch combines touch navigation, provider integration, custom icons
 and the extra-button mouse gesture. The normal install command tracks `main`.

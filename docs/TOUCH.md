@@ -1,8 +1,8 @@
-# Orb v0.3.0 touch interface
+# Orb v0.4.0 touch interface
 
 ## Agreed scope
 
-Extend the existing v0.3.0 development branch with a keyboard-free navigation
+Extend the existing v0.4.0 development branch with a keyboard-free navigation
 surface: a reachable edge button, labelled radial favourites, an app grid,
 window switching and management, quick controls, touch settings and explicit
 Desktop / Touch / Automatic modes. Preserve existing desktop gestures and
@@ -44,18 +44,14 @@ touch driver before the same interface can be tested there.
 
 ## Try the development branch
 
-On Omarchy Quattro, install a committed checkout through the native manager:
+The v0.4.0 branch is currently local and uncommitted. After committing and verifying the candidate, install its local checkout on Omarchy Quattro through the native manager:
 
 ```bash
-git clone --branch v0.3.0 https://github.com/tcballard/omarchy-plugin-orb.git
-cd omarchy-plugin-orb
+cd /home/tcballard/omarchy-plugin-orb
 omarchy plugin add "$PWD" --enable --yes
 ```
 
-The local-source installer may normalize this repository’s Git origin for future
-normal updates. Keep this checkout and reinstall it after `git pull` when testing
-the branch; the public update command tracks the stable source. Do not overwrite
-a modified installed checkout. Existing `orb.json` is retained.
+Use an owned Omadev nest for automated desktop tests. Do not overwrite a modified installed checkout. Existing `orb.json` is retained. The public install/update commands continue to track `main`.
 
 Open Orb, select the centre for Settings, then **Touch → Touch → Save**. Choose
 the tablet display explicitly if more than one output could match. Move the edge
@@ -159,4 +155,4 @@ suspend/resume, accessible input, output mapping, provider recovery, battery/idl
 observations and a documented route back to Desktop. This plugin release does
 not change the upstream installer or global default.
 
-Named wheels, saved setups, import/export and touch window pairs have a separate [operation and acceptance checklist](WHEELS.md).
+Named wheels, saved setups, import/export and touch window pairs are [deferred beyond v0.4.0](WHEELS.md).

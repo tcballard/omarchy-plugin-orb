@@ -6,7 +6,7 @@
 
 Launch apps, switch themes and open your installed coding agents from a wheel near your pointer. Press **Super+Alt+O**, then click an icon or select it with the keyboard and press Enter. Choose five to eight shortcuts in Orb’s settings; the wheel follows your Omarchy shell theme.
 
-**For Omarchy Quattro.** This development branch prepares v0.3.0; the normal install command tracks `main`. Touch navigation and the new mouse gesture still need live Omarchy acceptance. [Install and update](#install) · [Touch setup and QA](docs/TOUCH.md) · [Current evidence](docs/ACCEPTANCE.json).
+**For Omarchy Quattro.** This development branch prepares v0.4.0; the normal install command tracks `main`. Touch navigation and the new mouse gesture still need live Omarchy acceptance. [Install and update](#install) · [Touch setup and QA](docs/TOUCH.md) · [Current evidence](docs/ACCEPTANCE.json).
 
 ![Orb with a five-section polygon and a circular centre](preview.png)
 
@@ -40,13 +40,13 @@ Disabling or removing Orb releases its runtime bindings; your Orb settings remai
 
 Requires Quattro with `PointerMoveGate`, the normal Omarchy launchers, Bash, Git, jq and libnotify. Orb includes compatibility for the Omarchy 4.0.6 shell's missing overlay, animation helper and menu app-library service. Node and a compiler are only development dependencies. The tested source and package scope is recorded in [acceptance evidence](docs/ACCEPTANCE.json).
 
-## Wheels and work setups
+## Release scope
 
-Switch named wheels from desktop or touch views. Settings → **Wheels** creates layouts, exports/imports them with custom icons, and saves app/workspace setups. Touch **Windows** can split two windows, change the ratio and swap sides. **Search** opens [Oma-Cast](https://github.com/typecraft-dev/oma-cast). See [Wheels and setups](docs/WHEELS.md) for operation and limits.
+v0.4.0 focuses on custom icons, the extra mouse button, additional installed agents and touch/tablet navigation. Named wheels, wheel import/export, saved work setups and split/swap controls are deferred to a future release. Existing saved wheel/setup data is retained; the current shortcut layout remains available. [Deferred work](docs/WHEELS.md).
 
 ## Touch and tablet mode
 
-v0.3.0 adds a touch home with **Favourites, Apps, Windows and Controls**. Open Settings → **Touch**, choose **Touch**, select the display and Save. A movable Orb button appears on the chosen screen. You can also add Orb to your bar and tap it to open touch navigation on that bar’s display.
+v0.4.0 adds a touch home with **Favourites, Apps, Windows and Controls**. Open Settings → **Touch**, choose **Touch**, select the display and Save. A movable Orb button appears on the chosen screen. You can also add Orb to your bar and tap it to open touch navigation on that bar’s display.
 
 - Tap a labelled favourite, hold it to edit, or enable drag selection. Choose a left/right edge fan or full wheel. Small viewports use a scrollable grid without shrinking targets.
 - Browse installed apps or open Oma-Cast Search, switch windows, restore minimised windows, maximise, move between existing workspaces and confirm before closing.
@@ -78,9 +78,9 @@ Try the development branch using the [checkout instructions](docs/TOUCH.md#try-t
 
 ![Browse actions beside the wheel and assign them directly to slots](docs/v0.2.0-browser.png)
 
-Previous native captures and checks: [v0.2.0 acceptance evidence](docs/history/v0.2.0-ACCEPTANCE.json). The v0.3.0 touch surfaces and mouse gesture have not yet had live Omarchy acceptance. Earlier editor checks: [Catalog and size presets](docs/CATALOG-ACCEPTANCE.json) · [Settings](docs/SETTINGS-ACCEPTANCE.json).
+Previous native captures and checks: [v0.2.0 acceptance evidence](docs/history/v0.2.0-ACCEPTANCE.json). The v0.4.0 touch surfaces and mouse gesture have not yet had live Omarchy acceptance. Earlier editor checks: [Catalog and size presets](docs/CATALOG-ACCEPTANCE.json) · [Settings](docs/SETTINGS-ACCEPTANCE.json).
 
-Settings remain in `~/.config/omarchy/orb.json`, and can still be edited directly. See [the example](config.example.json). Five to eight top-level actions, one submenu level, the installed-agent menu (`"menu": "agents"`), Files locations (`"menu": "files"`), shape (`"circle"` or `"polygon"`), size, animation, shortcut, desktop activation and an optional extra mouse button are supported. Touch mode, output, keyboard provider, hand, target size and selection behaviour use the same validated configuration and Save/Cancel flow. The mouse button defaults to code 277 and stays off until enabled. The default diameter is 240 theme units. App choices store a `desktopId` and launch through Quattro’s app library; icons follow the installed application. Custom shortcuts run as literal argument arrays. Saved work setups use a fixed launch template with validated desktop IDs and compositor window rules. Orb preserves unrelated settings and metadata on moved or edited actions, and rejects conflicting external edits. Invalid configuration retains the last valid actions and shows an error hint.
+Settings remain in `~/.config/omarchy/orb.json`, and can still be edited directly. See [the example](config.example.json). Five to eight top-level actions, one submenu level, the installed-agent menu (`"menu": "agents"`), Files locations (`"menu": "files"`), shape (`"circle"` or `"polygon"`), size, animation, shortcut, desktop activation and an optional extra mouse button are supported. Touch mode, output, keyboard provider, hand, target size and selection behaviour use the same validated configuration and Save/Cancel flow. The mouse button defaults to code 277 and stays off until enabled. The default diameter is 240 theme units. App choices store a `desktopId` and launch through Quattro’s app library; icons follow the installed application. Custom shortcuts run as literal argument arrays. Orb preserves unrelated settings and metadata on moved or edited actions, and rejects conflicting external edits. Invalid configuration retains the last valid actions and shows an error hint.
 
 Desktop right-click uses Hyprland’s auto-consuming binding: app, panel and widget clicks pass through. It replaces the wallpaper’s right-double-click theme gesture; Themes remains available as a shortcut. Conservative panel bounds, including the dock’s transparent area, are excluded. The optional extra mouse button is a separate global binding.
 

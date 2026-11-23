@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls as Controls
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
@@ -34,22 +33,8 @@ Item {
     }
     onTouchEnabledChanged: if (!touchEnabled && touchSession && config.inputMode === "auto") dismiss()
     readonly property string touchHelper: decodeURIComponent(Qt.resolvedUrl("scripts/touch").toString().replace(/^file:\/\//,""))
-    function selectedOutput() {
-        if (touchSession) return touchScreenName;
-        return panel.targetScreen ? panel.targetScreen.name : touchScreen ? touchScreen.name : "";
-    }
-    function switchWheel(id) {
-        if (settingsSaving || id === config.activeWheel) return;
-        saveOriginal = JSON.parse(JSON.stringify(config));
-        saveDraft = Object.assign({},saveOriginal,{activeWheel:id});
-        settingsError = ""; settingsSaving = true; saveWatchdog.restart(); reloadForSave();
-        submenuTitle = ""; agentMenu = false; selected = -1;
-    }
     function search() {
         launchAction(["bash",touchHelper,"search"],"Search");
-    }
-    function runSetup(id) {
-        launchAction(["bash",touchHelper,"setup",id,selectedOutput()],"Work setup");
     }
     function openTouch(output) {
         if (shell) shell.summon(pluginId, JSON.stringify({ touch: true, output: output || "" }));
@@ -306,12 +291,14 @@ Item {
         if (opened && index === -2) { activateHub(); return; }
         if (!opened || index < 0 || index >= selectionCount) return;
         var action = wheelActions[index];
+        if (action.menu === "setups") {
+            touchBackend.error = "Work setups are deferred to a future release. Replace this shortcut in Settings.";
+            return;
+        }
         if (action.menu || action.children) {
             parentSelection = index; submenuTitle = action.label;
             agentMenu = action.menu === "agents";
-            submenuRows = action.menu === "setups" ? (config.setups || []).map(function(setup) {
-                return {label:setup.name.slice(0,20),icon:"app",command:["bash",root.touchHelper,"setup",setup.id,root.selectedOutput()]};
-            }) : action.menu === "files" ? Model.fileActions(decodeURIComponent(Qt.resolvedUrl("scripts/files").toString().replace(/^file:\/\//, ""))) : action.children || [];
+            submenuRows = action.menu === "files" ? Model.fileActions(decodeURIComponent(Qt.resolvedUrl("scripts/files").toString().replace(/^file:\/\//, ""))) : action.children || [];
             selected = -1; menuPage = 0; moveGate.reset();
             if (agentMenu) { agentError = ""; installedAgents = []; agents.running = true; }
             return;
@@ -338,7 +325,6 @@ Item {
         builtins = builtins.concat(builtins[4].children || []);
         builtins.splice(4, 0, { label: "Postcard", icon: "postcard", command: ["omarchy-shell", "shell", "summon", "tahayvr.postcard", "{}"] });
         builtins.push({label:"Search",icon:"search",command:["omarchy-shell","oma-cast","show"]});
-        builtins.push({label:"Work setups",icon:"app",menu:"setups"});
         builtins.push({ label: "Make something cool", icon: "create", children: [
             { label: "New theme", icon: "themes", command: ["omarchy", "agent", "prompt", "Make me a new Omarchy theme. Ask me what look or inspiration I have in mind, then build it following the Omarchy skill's theming guide and switch to it."] },
             { label: "New plugin", icon: "plugins", command: ["omarchy", "agent", "prompt", "Make me a new Omarchy shell plugin. Ask me what I'd like it to do, then build it following the Omarchy skill's plugin guide and enable it."] },
@@ -423,9 +409,7 @@ Item {
             touchCapabilities: touchBackend.capabilities, keyboardSpace: touchBackend.keyboardSpace,
             keyboard: keyboardMode, x: wheel.x, y: wheel.y, diameter: wheel.width,
             iconsOnly: true, selectionCaption: hint.text,
-            activeWheel: config.activeWheel, wheelNames: (config.wheels || []).map(function(w) { return w.name; }),
             desktopSearch: {x: wheel.x + desktopSearch.mapToItem(wheel,0,0).x, y: wheel.y + desktopSearch.mapToItem(wheel,0,0).y, width: desktopSearch.width, height: desktopSearch.height},
-            wheelChooser: {visible: wheelChooser.visible, x: wheelChooser.x, y: wheelChooser.y, width: wheelChooser.width, height: wheelChooser.height},
             captionFontSize: hint.font.pixelSize, footerHeight: panel.placement.footer,
             hubActive: hubActive,
             settingsOpen: settingsOpen, settingsSaving: settingsSaving, settingsError: settingsError,
@@ -640,8 +624,7 @@ Item {
         readonly property var monitorData: targetMonitor ? targetMonitor.lastIpcObject : ({})
         readonly property var placement: Model.placement(
             root.pointer.x - (monitorData.x || 0), root.pointer.y - (monitorData.y || 0),
-            width, height, monitorData.reserved || [0,0,0,0], Commons.Style.space(root.config.diameter),
-            (root.config.wheels || []).length > 1 && !root.submenuTitle ? 38 : 0)
+            width, height, monitorData.reserved || [0,0,0,0], Commons.Style.space(root.config.diameter))
 
         MouseArea {
             anchors.fill: parent
@@ -654,7 +637,6 @@ Item {
             focus: root.opened
             Keys.onPressed: event => {
                 if (event.key === Qt.Key_S && !root.submenuTitle) root.search();
-                else if (event.key === Qt.Key_W && wheelChooser.visible) { wheelChooser.forceActiveFocus(); wheelChooser.popup.open(); }
                 else if (event.key === Qt.Key_Escape || event.key === Qt.Key_Backspace || (root.submenuTitle && event.key === Qt.Key_Left)) root.back();
                 else if (event.key === Qt.Key_Home) { root.keyboardMode = true; root.selected = -2; moveGate.reset(); }
                 else if (event.key === Qt.Key_PageDown) root.turnPage(1);
@@ -820,65 +802,6 @@ Item {
                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.turnPage(index === 0 ? -1 : 1) }
                     }
                 }
-            }
-        }
-        Controls.ComboBox {
-            id: wheelChooser
-            objectName: "orb-desktop-wheel-chooser"
-            visible: root.opened && root.positioned && !root.settingsOpen && !root.touchSession
-                && !root.submenuTitle && !root.gesture && count > 1
-            opacity: panel.contentRevealed ? 1 : 0
-            x: wheel.x; y: wheel.y + wheel.height + 38 * wheel.captionScale
-            width: wheel.width; height: 32
-            z: 2
-            model: root.config.wheels || []; textRole: "name"
-            currentIndex: model.findIndex(function(w) { return w.id === root.config.activeWheel; })
-            enabled: !root.settingsSaving
-            Accessible.name: "Active Orb wheel"
-            onActivated: index => { root.switchWheel(model[index].id); keys.forceActiveFocus(); }
-            background: Rectangle {
-                radius: height / 2; color: Commons.Color.menu.background
-                border.width: 1
-                border.color: wheelChooser.activeFocus || wheelChooser.hovered ? Commons.Color.menu.selectedBorder : Commons.Util.alpha(Commons.Color.menu.text, 0.16)
-            }
-            contentItem: Text {
-                leftPadding: 14; rightPadding: 30
-                text: wheelChooser.displayText; textFormat: Text.PlainText
-                verticalAlignment: Text.AlignVCenter; elide: Text.ElideRight
-                font.family: Commons.Style.font.menuFamily; font.pixelSize: 12
-                color: Commons.Color.menu.text
-            }
-            indicator: Text {
-                x: parent.width - width - 12; anchors.verticalCenter: parent.verticalCenter
-                text: "⌄"; color: Commons.Color.menu.text; font.pixelSize: 16
-            }
-            delegate: Controls.ItemDelegate {
-                required property var modelData
-                required property int index
-                width: wheelChooser.width; height: 36
-                highlighted: wheelChooser.highlightedIndex === index
-                contentItem: Text {
-                    text: modelData.name; textFormat: Text.PlainText; elide: Text.ElideRight
-                    verticalAlignment: Text.AlignVCenter
-                    color: Commons.Color.menu.text; font.family: Commons.Style.font.menuFamily; font.pixelSize: 12
-                }
-                background: Rectangle { color: parent.highlighted ? Commons.Color.menu.selectedBackground : "transparent"; radius: 8 }
-            }
-            popup: Controls.Popup {
-                y: wheelChooser.height + 4; width: wheelChooser.width
-                padding: 4
-                implicitHeight: Math.min(contentItem.implicitHeight + 8, 224)
-                background: Rectangle {
-                    radius: 12; color: Commons.Color.menu.background
-                    border.width: 1; border.color: Commons.Util.alpha(Commons.Color.menu.text, 0.2)
-                }
-                contentItem: ListView {
-                    clip: true; implicitHeight: contentHeight
-                    model: wheelChooser.popup.visible ? wheelChooser.delegateModel : null
-                    currentIndex: wheelChooser.highlightedIndex
-                    Controls.ScrollIndicator.vertical: Controls.ScrollIndicator { }
-                }
-                onClosed: if (root.opened && !root.settingsOpen) keys.forceActiveFocus()
             }
         }
         EditorLabel {

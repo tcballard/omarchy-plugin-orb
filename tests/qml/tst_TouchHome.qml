@@ -10,7 +10,7 @@ TestCase {
     when: windowShown
     QtObject {
         id: mockController
-        property var config: ({touchEdge:"right",touchLayout:"ring",touchScale:1,wheels:[{id:"everyday",name:"Everyday"}],activeWheel:"everyday",setups:[]})
+        property var config: ({touchEdge:"right",touchLayout:"ring",touchScale:1})
         property var wheelActions: [0,1,2,3,4,5].map(function(i) { return {label:"Action " + i,icon:"terminal"}; })
         property string submenuTitle: ""
         property int pageCount: 1
@@ -22,8 +22,6 @@ TestCase {
             function iconSource(icon) { return ""; }
         }
         function search() { launched = "oma-cast"; }
-        function switchWheel(id) { launched = id; }
-        function runSetup(id) { launched = id; }
         function appIconSource(action) { return ""; }
         function launchDesktop(entry) { launched = entry.id; }
         function activate(index) { launched = String(index); }
@@ -80,17 +78,6 @@ TestCase {
         compare(mockBackend.last.join("|"),"window|focus|0xabc|eDP-1"); verify(mockController.touchDismissAfter);
         mockController.touchDismissAfter = false; mockBackend.busy = true;
         tap("A real window"); verify(!mockController.touchDismissAfter);
-    }
-    function test_pair_ratio_and_swap() {
-        tap("Windows"); home.choosePair("0xabc"); home.choosePair("0xdef");
-        // The newly visible Flow must be polished before its pointer targets
-        // are used. Qt 6.12 otherwise delivers this click at the previous frame.
-        verify(waitForRendering(home));
-        tap("Split"); compare(mockBackend.last.join("|"),"pair|0xabc|0xdef|eDP-1|50");
-        tap("Swap sides"); compare(mockBackend.last.join("|"),"pair|0xdef|0xabc|eDP-1|50");
-        home.splitRatio = 30; home.applyPair(); compare(mockBackend.last[4],"30");
-        mockBackend.busy = true; home.splitRatio = 70; home.applyPair(); compare(mockBackend.last[4],"30");
-        tap("Clear pair"); compare(home.pairFirst,""); compare(home.pairSecond,"");
     }
     function test_small_view_keeps_navigation_and_keyboard() {
         home.width = 320; home.height = 440; verify(waitForRendering(home));

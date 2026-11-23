@@ -101,7 +101,9 @@ function action(a, depth) {
         && JSON.stringify(a.command) === '["omarchy","launch","nautilus"]') {
         out.menu = "files"; return out;
     }
-    if ((a.menu === "agents" || a.menu === "files" || a.menu === "setups") && depth === 0 && !a.command && !a.children) { out.menu = a.menu; return out; }
+    // Preserve old setup slots as inactive placeholders; never launch them.
+    if (a.menu === "setups" && depth === 0 && !a.command && !a.children) { out.menu = a.menu; return out; }
+    if ((a.menu === "agents" || a.menu === "files") && depth === 0 && !a.command && !a.children) { out.menu = a.menu; return out; }
     if (Array.isArray(a.children) && depth === 0 && !a.command && !a.menu && a.children.length > 0 && a.children.length <= 12) {
         out.children = a.children.map(function(c) { return action(c, 1); });
         return out.children.every(function(c) { return c !== null; }) ? out : null;
@@ -131,7 +133,7 @@ function mergeAction(document, original, draft, childOrigins) {
     }
     return result;
 }
-function mergeFlatSettings(document, original, draft) {
+function mergeSettings(document, original, draft) {
     var result = JSON.parse(JSON.stringify(document));
     var current = parse(JSON.stringify(document), null);
     if (current.error) return { error: current.error };
@@ -187,65 +189,6 @@ function mergeFlatSettings(document, original, draft) {
     var checked = parse(JSON.stringify(result), null);
     return checked.error ? { error: checked.error } : { document: result, error: "" };
 }
-function librarySettings(value, syncActions) {
-    var active = value.activeWheel === undefined ? "everyday" : value.activeWheel;
-    var wheels = value.wheels === undefined ? [{id:"everyday", name:"Everyday", actions:value.actions}] : value.wheels;
-    if (!Array.isArray(wheels) || !wheels.length || wheels.length > 16) return {error:"Keep between one and sixteen wheels."};
-    var ids = [];
-    for (var i = 0; i < wheels.length; i++) {
-        var w = wheels[i];
-        if (!w || !/^[a-z0-9][a-z0-9_-]{0,47}$/.test(w.id) || ids.indexOf(w.id) >= 0 || typeof w.name !== "string" || !w.name.trim() || w.name.length > 32
-            || !Array.isArray(w.actions) || w.actions.length < 5 || w.actions.length > 8 || w.actions.some(function(a) { return !action(a,0); })) return {error:"Invalid named wheel."};
-        ids.push(w.id);
-    }
-    if (ids.indexOf(active) < 0) return {error:"The active wheel is missing."};
-    var setups = value.setups === undefined ? [] : value.setups;
-    if (!Array.isArray(setups) || setups.length > 16) return {error:"Keep at most sixteen work setups."};
-    ids = [];
-    for (var j = 0; j < setups.length; j++) {
-        var t = setups[j];
-        if (!t || !/^[a-z0-9][a-z0-9_-]{0,47}$/.test(t.id) || ids.indexOf(t.id) >= 0 || typeof t.name !== "string" || !t.name.trim() || t.name.length > 32
-            || !Number.isInteger(t.workspace) || t.workspace < 1 || t.workspace > 9999 || ["tiled","columns"].indexOf(t.layout) < 0
-            || !Array.isArray(t.apps) || !t.apps.length || t.apps.length > 8 || t.apps.some(function(id) { return typeof id !== "string" || !/^[A-Za-z0-9_][A-Za-z0-9_.@+-]{0,254}$/.test(id); })) return {error:"Invalid work setup."};
-        ids.push(t.id);
-    }
-    wheels = JSON.parse(JSON.stringify(wheels));
-    wheels.forEach(function(w) { if (syncActions !== false && w.id === active) w.actions = JSON.parse(JSON.stringify(value.actions)); });
-    return {config:{activeWheel:active,wheels:wheels,setups:JSON.parse(JSON.stringify(setups))},error:""};
-}
-function mergeSettings(document, original, draft) {
-    var current = parse(JSON.stringify(document), null);
-    if (current.error) return {error:current.error};
-    var before = librarySettings(original, false), after = librarySettings(Object.assign({}, original, draft), false);
-    if (before.error || after.error) return {error:before.error || after.error};
-    var target = after.config.activeWheel;
-    if (current.config.activeWheel !== before.config.activeWheel) return {error:"Active wheel changed elsewhere. Reopen settings."};
-    var nextWheels = current.config.wheels;
-    if (JSON.stringify(before.config.wheels) !== JSON.stringify(after.config.wheels)) {
-        if (JSON.stringify(current.config.wheels) !== JSON.stringify(before.config.wheels)) return {error:"Wheels changed elsewhere. Reopen settings."};
-        nextWheels = after.config.wheels;
-    }
-    var nextSetups = current.config.setups;
-    if (JSON.stringify(before.config.setups) !== JSON.stringify(after.config.setups)) {
-        if (JSON.stringify(current.config.setups) !== JSON.stringify(before.config.setups)) return {error:"Work setups changed elsewhere. Reopen settings."};
-        nextSetups = after.config.setups;
-    }
-    var flatDraft = Object.assign({},draft);
-    var merged = mergeFlatSettings(document, original, flatDraft);
-    if (merged.error) return merged;
-    var result = merged.document;
-    nextWheels = JSON.parse(JSON.stringify(nextWheels));
-    nextWheels.forEach(function(w) { if (w.id === before.config.activeWheel) w.actions = result.actions; });
-    var selected = nextWheels.filter(function(w) { return w.id === target; })[0];
-    if (!selected) return {error:"The selected wheel was removed."};
-    if (target !== before.config.activeWheel) result.actions = selected.actions;
-    if (document.wheels !== undefined || JSON.stringify(before.config.wheels) !== JSON.stringify(after.config.wheels) || target !== "everyday") {
-        result.wheels = nextWheels; result.activeWheel = target;
-    }
-    if (document.setups !== undefined || JSON.stringify(before.config.setups) !== JSON.stringify(after.config.setups)) result.setups = nextSetups;
-    var checked = parse(JSON.stringify(result),null);
-    return checked.error ? {error:checked.error} : {document:result,error:""};
-}
 function touchSettings(value) {
     var out = {}, choices = { inputMode: ["desktop", "touch", "auto"], touchEdge: ["right", "left"],
         touchLayout: ["fan", "ring"], touchKeyboard: ["auto", "omatouch", "tablet"] };
@@ -278,8 +221,6 @@ function parse(raw, fallback) {
             return { config: fallback, error: "Invalid action " + (i + 1) + "; using the last valid configuration." };
         actions.push(a);
     }
-    var library = librarySettings(value);
-    if (library.error) return { config: fallback, error: library.error };
     var activation = shortcut(value.shortcut);
     if (activation.error) return { config: fallback, error: activation.error };
     if (value.desktopRightClick !== undefined && typeof value.desktopRightClick !== "boolean")
@@ -295,7 +236,7 @@ function parse(raw, fallback) {
         return { config: fallback, error: "Choose a circle or polygon wheel." };
     var touch = touchSettings(value);
     if (touch.error) return { config: fallback, error: touch.error };
-    return { config: Object.assign(touch.config, library.config, { actions: actions, diameter: Math.max(220, Math.min(600, Number(value.diameter) || 240)), animation: value.animation !== false,
+    return { config: Object.assign(touch.config, { actions: actions, diameter: Math.max(220, Math.min(600, Number(value.diameter) || 240)), animation: value.animation !== false,
         shape: value.shape || "circle", shortcut: activation.value, desktopRightClick: value.desktopRightClick === true,
         mouseOpen: mouseOpen, mouseButton: mouse.value }), error: "" };
 }
@@ -318,19 +259,18 @@ function hit(x, y, diameter, count, shape) {
     var angle = (Math.atan2(dy, dx) * 180 / Math.PI + 90 + step / 2 + 360) % 360;
     return Math.floor(angle / step) % count;
 }
-function placement(px, py, width, height, reserved, preferred, extraFooter) {
+function placement(px, py, width, height, reserved, preferred) {
     var r = reserved || [0, 0, 0, 0], pad = 12, footer = 38;
-    var tools = Math.max(0, Number(extraFooter) || 0);
     var left = r[0] + pad, top = r[1] + pad;
     var availableW = Math.max(1, width - r[0] - r[2] - pad * 2);
     var availableH = Math.max(1, height - r[1] - r[3] - pad * 2);
-    var size = Math.max(1, Math.min(preferred, availableW, availableH - footer - tools));
-    if (size > 280) size = Math.min(size, (availableH - tools) / (1 + footer / 280));
+    var size = Math.max(1, Math.min(preferred, availableW, availableH - footer));
+    if (size > 280) size = Math.min(size, availableH / (1 + footer / 280));
     var captionScale = Math.max(1, size / 280);
-    footer = footer * captionScale + tools;
+    footer *= captionScale;
     return { size: size, captionScale: captionScale, footer: footer,
         x: Math.max(left, Math.min(px - size / 2, left + availableW - size)),
         y: Math.max(top, Math.min(py - size / 2, top + availableH - size - footer)) };
 }
-if (typeof module !== "undefined") module.exports = { parse: parse, librarySettings: librarySettings, touchSettings: touchSettings, action: action, icons: icons, validIcon: validIcon, iconUrl: iconUrl, fileActions: fileActions, shortcut: shortcut, mouseButton: mouseButton, bindingSignature: bindingSignature, bindingConflict: bindingConflict, edgeRadius: edgeRadius,
+if (typeof module !== "undefined") module.exports = { parse: parse, touchSettings: touchSettings, action: action, icons: icons, validIcon: validIcon, iconUrl: iconUrl, fileActions: fileActions, shortcut: shortcut, mouseButton: mouseButton, bindingSignature: bindingSignature, bindingConflict: bindingConflict, edgeRadius: edgeRadius,
     move: move, hit: hit, placement: placement, mergeSettings: mergeSettings };

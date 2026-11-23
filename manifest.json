@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.tcballard.orb",
   "name": "Orb",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "author": "Tom Ballard",
   "license": "MIT",
   "description": "A themed shortcut wheel and touch home with apps, windows, controls and tablet-mode integration.",
