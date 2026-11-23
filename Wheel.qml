@@ -15,6 +15,12 @@ Item {
     property string omarchyPath: ""
     property var shell: null
     property var manifest: null
+    // Injected by the host. Some shells keep a keepLoaded menu mounted after
+    // Disable, so Orb releases its bindings and surfaces whenever this is false.
+    property var pluginRegistry: null
+    readonly property bool pluginEnabled: !pluginRegistry || pluginRegistry.enabled !== false
+    onPluginEnabledChanged: if (!pluginEnabled && opened)
+                                dismiss()
     property bool opened: false
     property bool positioned: false
     property bool touchSession: false
@@ -91,7 +97,7 @@ Item {
     }
     TouchHandle {
         id: edgeHandle
-        handleEnabled: root.touchEnabled && !root.opened
+        handleEnabled: root.pluginEnabled && root.touchEnabled && !root.opened
         targetScreen: root.touchScreen
         edge: root.config.touchEdge || "right"
         position: root.config.touchPosition === undefined ? 0.7 : root.config.touchPosition
@@ -165,6 +171,7 @@ Item {
     BindingSetup {
         id: bindings
         helper: root.helper("setup")
+        active: root.pluginEnabled
         onSucceeded: userConfig.reload()
         onFailed: {
             // Even a conflicting shortcut leaves a reachable in-app error/retry.
