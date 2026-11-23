@@ -146,14 +146,21 @@ test('extra-button registration, conflicts and lifecycle are safe',()=>fixture((
   assert.ok(interpreter,'Lua interpreter required for lifecycle tests');
   const script=path.join(dir,'mouse-lifecycle.lua');
   const newer='1792450000001-123456789';
+  const lifecycle=vm.createContext({});vm.runInContext(fs.readFileSync(path.join(root,'BindingLifecycle.js'),'utf8'),lifecycle);
+  // Older Hyprland removed every bind on a key; 0.57.1 removes only the handle.
+  for(const perHandle of [false,true]){
   fs.writeFileSync(script,`local registered, events = {}, {}
+local perHandle = ${perHandle}
 local pointer = {x=100,y=200}
 local failRelease = false
 hl = {
   bind = function(key, cb, opts)
     if failRelease and opts.release then return nil end
     local bind = { key=key, callback=cb, opts=opts, removed=false }
-    function bind:remove() for _, b in ipairs(registered) do if b.key==self.key then b.removed=true end end end
+    function bind:remove()
+      if perHandle then self.removed=true; return end
+      for _, b in ipairs(registered) do if b.key==self.key then b.removed=true end end
+    end
     table.insert(registered, bind); return bind
   end,
   timer = function(cb, opts)
@@ -201,9 +208,12 @@ assert(events[#events]=='orb/${newer}/cancel/110,150/6000' and not timer.enabled
 local before=#events; fire('mouse:275',true); assert(#events==before)
 fire('mouse:275',false); assert(timer.enabled)
 evaluate(${JSON.stringify(off.replaceAll(token,newer))}); assert(live()==1 and not timer.enabled)
+evaluate(${JSON.stringify(on.replaceAll(token,newer))}); assert(live()==3)
+evaluate(${JSON.stringify(lifecycle.cleanup(newer))}); assert(live()==0, 'unload must remove the shortcut and both mouse handles')
 print('PASS: ordered gestures, binding reuse, rollback and cleanup')
 `);
-  const lua=spawnSync(interpreter,[script],{encoding:'utf8'});assert.equal(lua.status,0,lua.stdout+lua.stderr);
+  const lua=spawnSync(interpreter,[script],{encoding:'utf8'});assert.equal(lua.status,0,`perHandle=${perHandle}: `+lua.stdout+lua.stderr);
+  }
 }));
 test('an invalid mouse code cannot silently acquire a different button',()=>fixture(({dir,run,put})=>{
   put('omarchy/orb.json',JSON.stringify({...JSON.parse(example),mouseOpen:true,mouseButton:'abc'}));
@@ -224,10 +234,14 @@ test('Lua lifecycle removes only owned handles, survives reload and rejects late
   const keyboardOnly=fs.readFileSync(path.join(dir,'apply.lua'),'utf8');
   const context=vm.createContext({});vm.runInContext(fs.readFileSync(path.join(root,'BindingLifecycle.js'),'utf8'),context);
   const cleanup=context.cleanup(token), newer='1792450000001-123456789';
-  const lua=`local registered = {}; local count = 0
+  for(const perHandle of [false,true]){
+  const lua=`local registered = {}; local count = 0; local perHandle = ${perHandle}
 hl = { bind = function(key, cb, opts)
   local bind = { key = key, callback = cb, description = opts.description, removed = false }
-  function bind:remove() for _, other in ipairs(registered) do if other.key == self.key then other.removed = true end end end
+  function bind:remove()
+    if perHandle then self.removed = true; return end
+    for _, other in ipairs(registered) do if other.key == self.key then other.removed = true end end
+  end
   table.insert(registered, bind); return bind
 end, exec_cmd = function() count = count + 1 end }
 local function evaluate(code) assert(load(code))() end
@@ -256,5 +270,6 @@ print('PASS: native binding lifecycle')
   const script=path.join(dir,'lifecycle.lua');fs.writeFileSync(script,lua);
   const interpreter=['lua','lua5.4','texlua'].find(cmd=>spawnSync('which',[cmd]).status===0);
   assert.ok(interpreter,'Lua interpreter required for lifecycle tests (lua5.4 or texlua)');
-  const r=spawnSync(interpreter,[script],{encoding:'utf8'});assert.equal(r.status,0,r.stdout+r.stderr);
+  const r=spawnSync(interpreter,[script],{encoding:'utf8'});assert.equal(r.status,0,`perHandle=${perHandle}: `+r.stdout+r.stderr);
+  }
 }));

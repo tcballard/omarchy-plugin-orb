@@ -111,7 +111,7 @@ if [[ $mouse_open == true ]]; then
   mouse_button=$((10#$mouse_button))
   mouse_meta=$mouse_button
 fi
-# remove() clears every bind on one key. Ignore only the Orb bind this save replaces.
+# Older Hyprland remove() cleared every bind on one key. Ignore only the Orb bind this save replaces.
 retire_mouse=false
 [[ $mouse_open == true && $mouse_button == 273 ]] || retire_mouse=true
 if [[ $desktop_click == true ]]; then
@@ -133,8 +133,8 @@ if not r then r = { dead = {} }; _G.__orb_native_bindings = r end
 if r.dead[token] or (r.latest and r.latest > token) then return end
 local retained = {}
 local handles = {}
--- Bind:remove() removes every binding for the same key on current Hyprland.
--- Reuse unchanged keys instead of staging duplicates and deleting both.
+-- Older Hyprland Bind:remove() cleared every binding on the same key (0.57.1 removes
+-- only the handle). Reuse unchanged keys instead of staging duplicates and deleting both.
 for owner, previous in pairs(r) do
   if type(previous) == 'table' and owner ~= 'dead' and owner ~= 'gesture' and owner ~= 'gestureTimer' then
     if previous.shortcut == \"$canonical\" then handles[1] = previous[1]; retained[previous[1]] = true end
@@ -143,7 +143,7 @@ if [[ $desktop_click == true ]]; then
   code+=$'    if previous.desktopClick and previous[2] then handles[2] = previous[2]; retained[previous[2]] = true end\n'
 fi
 if [[ $mouse_open == true ]]; then
-  # Keep this bind in a dense slot. ipairs stops at a hole, and remove() clears every bind on that key.
+  # Keep this bind in a dense slot. ipairs stops at a hole; the pair removes both its handles.
   code+=$'    if previous.mouseButton == '"$mouse_button"$' then\n'
   code+=$'      if not previous.mouseGesture then error("Restart the shell to upgrade the Orb mouse binding.") end\n'
   code+=$'      local oldMouse\n'
