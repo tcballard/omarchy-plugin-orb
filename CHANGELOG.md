@@ -4,6 +4,7 @@
 
 - Defer named wheels, wheel import/export, saved work setups and split/swap controls to a future release; retain existing saved data.
 - Discover nine additional installed agents, retaining offline discovery and the existing default agent.
+- Launch shortcuts and list installed agents when Orb is installed under a path containing spaces or other escaped characters.
 - Cover overlay output selection, deferred reveal, close races, reserved geometry and hotplug with regression tests.
 
 - Open a touch home from a movable edge button or optional Orb bar entry, on the selected display.
