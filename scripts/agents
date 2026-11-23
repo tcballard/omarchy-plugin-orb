@@ -32,40 +32,40 @@ resolve() {
   return 1
 }
 rows=()
-while IFS='|' read -r executable label tool; do
+# Catalog columns: executable | label | mise tool | Omarchy agent mark (empty: generic icon).
+while IFS='|' read -r executable label tool mark; do
   if [[ ${1:-} == --resolve && ${2:-} != "$executable" ]]; then continue; fi
   if binary=$(resolve "$executable" "$tool"); then
     if [[ ${1:-} == --resolve ]]; then printf '%s\n' "$binary"; exit 0; fi
-    icon=agents
-    case "$executable" in claude|codex|grok) icon=$executable ;; esac
+    icon=${mark:-agents}
     rows+=("$(jq -cn --arg label "$label" --arg icon "$icon" --arg helper "$script_dir/agent" --arg id "$executable" \
       '{label:$label,icon:$icon,command:["omarchy","launch","tui","--app-id=org.omarchy.agent",$helper,$id]}')")
   fi
 done <<'CATALOG'
-claude|Claude Code|claude
-codex|Codex|codex
-grok|Grok|grok
-opencode|OpenCode|opencode
-pi|Pi|pi
-omp|Oh My Pi|github:can1357/oh-my-pi
-ori|Ori|github:OpenRouterLabs/ori-releases
-agy|Antigravity|antigravity-cli
-copilot|GitHub Copilot|copilot
-crush|Crush|crush
-cursor-agent|Cursor CLI|cursor-agent
-muse|Muse Code|muse
-kimi|Kimi|npm:@moonshot-ai/kimi-code
-hermes|Hermes|hermes
-openclaw|OpenClaw|openclaw
-qwen|Qwen Code|qwen
-dsh|DeepSeek Harness|npm:@deepseek-ai/dsh
-mcode|MiniMax Code|npm:@minimax-ai/code
-kiro-cli|Kiro CLI|http:kiro-cli
-freebuff|Freebuff|npm:freebuff
-kilo|Kilo|npm:@kilocode/cli
-devin|Devin CLI|http:devin
-amp|Amp|amp
-commandcode|Command Code|npm:command-code
+claude|Claude Code|claude|claude
+codex|Codex|codex|codex
+grok|Grok|grok|grok
+opencode|OpenCode|opencode|opencode
+pi|Pi|pi|
+omp|Oh My Pi|github:can1357/oh-my-pi|
+ori|Ori|github:OpenRouterLabs/ori-releases|
+agy|Antigravity|antigravity-cli|agy
+copilot|GitHub Copilot|copilot|copilot
+crush|Crush|crush|
+cursor-agent|Cursor CLI|cursor-agent|cursor
+muse|Muse Code|muse|muse
+kimi|Kimi|npm:@moonshot-ai/kimi-code|kimi
+hermes|Hermes|hermes|hermes
+openclaw|OpenClaw|openclaw|
+qwen|Qwen Code|qwen|qwen
+dsh|DeepSeek Harness|npm:@deepseek-ai/dsh|deepseek
+mcode|MiniMax Code|npm:@minimax-ai/code|minimax
+kiro-cli|Kiro CLI|http:kiro-cli|
+freebuff|Freebuff|npm:freebuff|
+kilo|Kilo|npm:@kilocode/cli|
+devin|Devin CLI|http:devin|devin
+amp|Amp|amp|
+commandcode|Command Code|npm:command-code|
 CATALOG
 [[ ${1:-} != --resolve ]] || exit 1
 printf '%s\n' "${rows[@]}" | jq -s .

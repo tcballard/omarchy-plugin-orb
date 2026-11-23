@@ -2,8 +2,12 @@
 var icons = ["browser", "terminal", "files", "screenshot", "themes", "plugins", "agents", "settings", "codex", "claude", "grok", "postcard", "app", "create",
     "home", "recent", "starred", "downloads", "documents", "pictures", "music", "videos", "trash",
     "search", "link", "code", "calendar", "clock", "mail", "lock", "power", "cloud", "bookmark"];
+// Agent marks shipped by Omarchy's Agents panel (shell/plugins/agents/assets).
+// Valid in saved actions, but kept out of the icon picker.
+var agentMarks = ["claude", "codex", "grok", "agy", "copilot", "cursor", "deepseek", "devin", "hermes", "kimi",
+    "minimax", "muse", "opencode", "qwen"];
 function validIcon(value) {
-    return typeof value === "string" && (icons.indexOf(value) >= 0 ||
+    return typeof value === "string" && (icons.indexOf(value) >= 0 || agentMarks.indexOf(value) >= 0 ||
         (value.length <= 4096 && /^\/[^\x00-\x1f]*\.(svg|png|jpe?g|webp)$/i.test(value)));
 }
 // Convert a resolved file:// URL (e.g. a bundled helper) to a local path.
@@ -283,7 +287,7 @@ function placement(px, py, width, height, reserved, preferred) {
 }
 if (typeof module !== "undefined") module.exports = {
     parse: parse, localPath: localPath, touchSettings: touchSettings, action: action, icons: icons,
-    validIcon: validIcon, iconUrl: iconUrl, fileActions: fileActions, shortcut: shortcut, mouseButton: mouseButton,
+    agentMarks: agentMarks, validIcon: validIcon, iconUrl: iconUrl, fileActions: fileActions, shortcut: shortcut, mouseButton: mouseButton,
     bindingSignature: bindingSignature, bindingConflict: bindingConflict, edgeRadius: edgeRadius,
     move: move, hit: hit, placement: placement, mergeSettings: mergeSettings
 };

@@ -4,6 +4,7 @@
 
 - Defer named wheels, wheel import/export, saved work setups and split/swap controls to a future release; retain existing saved data.
 - Discover nine additional installed agents, retaining offline discovery and the existing default agent.
+- Show each installed agent's own mark (Antigravity, OpenCode, Qwen Code, Copilot, Cursor and others) from Omarchy's Agents panel instead of a generic icon.
 - Launch shortcuts and list installed agents when Orb is installed under a path containing spaces or other escaped characters.
 - Cover overlay output selection, deferred reveal, close races, reserved geometry and hotplug with regression tests.
 

@@ -17,7 +17,7 @@ Template authorship: Tom Ballard, 2026, MIT. Project author: Tom Ballard.
 
 ## Agent marks
 
-The unmodified SVG files in `assets/agents/` are copied from Omarchy’s agents panel at [27d215832cfb74d252d4cfed8519f645c76d8d9c](https://github.com/tcballard/omarchy/tree/27d215832cfb74d252d4cfed8519f645c76d8d9c/shell/plugins/agents/assets). The upstream MIT notice is retained in `assets/agents/LICENSE.omarchy`.
+The unmodified SVG files in `assets/agents/` are copied from Omarchy’s agents panel at [27d215832cfb74d252d4cfed8519f645c76d8d9c](https://github.com/tcballard/omarchy/tree/27d215832cfb74d252d4cfed8519f645c76d8d9c/shell/plugins/agents/assets). The upstream MIT notice is retained in `assets/agents/LICENSE.omarchy`. Other agent marks are not copied into Orb: they are loaded at runtime from the user's installed Omarchy.
 
 - Codex mark: OpenAI; white and dark variants. [Brand information](https://openai.com/brand/).
 - Claude mark: Anthropic; original orange colour. [Claude](https://claude.com/).
