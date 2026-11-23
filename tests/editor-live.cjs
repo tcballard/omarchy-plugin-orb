@@ -15,7 +15,12 @@ async function until(check,message){for(let i=0;i<70;i++){if(check())return;awai
 const key=value=>run('wtype','-s','50','-k',value,'-s','50');
 const chord=(modifier,value)=>run('wtype','-M',modifier,'-k',value,'-m',modifier,'-s','70');
 const text=value=>run('wtype','--',value);
-const monitor=json('hyprctl','monitors','-j').find(m=>m.focused),pointer=path.join(repo,'artifacts/input/pointer');
+// Work in logical pixels (what Orb reports), so any display scale works. A
+// compositor reload can restore a different scale, so re-read it afterwards.
+let monitor;
+function readMonitor(){const m=json('hyprctl','monitors','-j').find(m=>m.focused);monitor={...m,width:Math.round(m.width/m.scale),height:Math.round(m.height/m.scale)};}
+readMonitor();
+const pointer=path.join(repo,'artifacts/input/pointer');
 const move=(x,y,button=0,end)=>run(pointer,Math.round(x),Math.round(y),monitor.width,monitor.height,button,...(end?end.map(Math.round):[]));
 const config=path.join(process.env.XDG_CONFIG_HOME||path.join(process.env.HOME,'.config'),'omarchy/orb.json');
 if(!onHost)assert.ok(config.startsWith(process.env.OMADEV_HOME+'/'),'Configuration must belong to the nest');
@@ -84,7 +89,8 @@ async function appearancePlacement(){
         await until(()=>status().visibleItems.length===count);await sleep(180);
         for(const p of [[1,1],[monitor.width-1,1],[1,monitor.height-1],[monitor.width-1,monitor.height-1],[1,monitor.height/2],[monitor.width-1,monitor.height/2]]){
             ipc('shell','hide',id);move(...p);await openSettings();const opening=frame(),s=status();
-            assert.deepEqual([s.windowWidth,s.windowHeight],[monitor.width,monitor.height],'The nest was resized during the check; rerun with a stable display');
+            // Settings respects reserved space, so its overlay excludes the bar.
+            assert.deepEqual([s.windowWidth,s.windowHeight],[monitor.width-left-right,monitor.height-top-bottom],'The display was resized during the check; rerun with a stable display');
             assert.ok(s.settingsX>=left+11.5&&s.settingsY>=top+11.5);
             assert.ok(s.settingsX+s.settingsWidth<=monitor.width-right-11.5&&s.settingsY+s.settingsHeight<=monitor.height-bottom-11.5);
             assert.ok(Math.abs(s.settingsX+s.settingsWidth/2-(left+monitor.width-right)/2)<=.5,'Settings must be horizontally centred regardless of the pointer');
@@ -171,7 +177,7 @@ await fill('orb-opening-key','F12');await click('orb-modifier-Ctrl');await click
 await until(()=>status().setupReady&&!status().setupError,'Opening controls did not register');
 let binds=json('hyprctl','binds','-j');assert.equal(binds.filter(b=>b.key==='F12'&&b.modmask===76&&b.description.startsWith('Orb shortcut wheel [orb:')).length,1);
 assert.equal(binds.filter(b=>b.key==='mouse:273'&&b.modmask===0&&b.description.startsWith('Orb on empty desktop [orb:')).length,1);
-run('hyprctl','reload');await until(()=>json('hyprctl','binds','-j').some(b=>b.key==='F12'&&b.modmask===76&&b.description.startsWith('Orb shortcut wheel [orb:')),'Bindings did not recover after compositor reload');
+run('hyprctl','reload');await sleep(500);readMonitor();await until(()=>json('hyprctl','binds','-j').some(b=>b.key==='F12'&&b.modmask===76&&b.description.startsWith('Orb shortcut wheel [orb:')),'Bindings did not recover after compositor reload');
 await openSettings();await click('orb-tab-2');assert.equal(status().draftShortcut,'SUPER + CTRL + ALT + F12');assert.equal(status().draftDesktopRightClick,true);
 await click('orb-modifier-Ctrl');await click('orb-modifier-Alt');await fill('orb-opening-key','O');const beforeConflict=fs.readFileSync(config,'utf8');await click('orb-save');
 await until(()=>!status().settingsSaving&&status().settingsError.includes('already in use'));assert.equal(fs.readFileSync(config,'utf8'),beforeConflict);capture('editor-shortcut-conflict');await click('orb-cancel');
