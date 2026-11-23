@@ -2,58 +2,120 @@
   "schemaVersion": 1,
   "status": "pending-live",
   "version": "0.4.0",
-  "input_commit": null,
+  "input_commit": "55c0d77268b9b1f9ffd43c22542fea7e4ff0bacf",
   "date": "2026-11-23",
-  "platform": "Local Linux checkout (Omarchy dev f97d3e7dc8, Qt 6.12); v0.4.0 scope revision awaiting source-bound acceptance",
+  "platform": "Dell XPS 9320, x86_64; Omarchy dev f97d3e7dc80e1f3ff39b142bbd330d537fe7c674; Hyprland 0.57.1 (acc1aa0b); Qt 6.12.0; Node v26.13.1; eDP-1 1920x1200 at scale 1.25 and 1 (live runs), 26px reserved bar",
   "commands": [
     "./tests/run",
-    "node tests/model.cjs",
-    "node tests/editor.cjs",
-    "node --test tests/*.test.cjs",
+    "./tests/native (plugin validator, QML parser, qmlformat layout, Lua right-click fixture)",
     "QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software QT_QPA_PLATFORMTHEME= QT_STYLE_OVERRIDE=Basic /usr/lib/qt6/bin/qmltestrunner -input tests/qml -import tests/qml/stubs",
-    "./tests/native (plugin validator, QML parser, qmlformat layout)",
-    "bash -n on runtime and test shell entry points",
-    "lua tests/desktop-click.lua",
     "omarchy plugin validate .",
-    "git diff --check",
-    "node scripts/runtime-hashes.mjs"
+    "node scripts/runtime-hashes.mjs",
+    "ORB_LIVE_HOST=1 node tests/{live,compact-live,extras-live,preview-live,rightclick-live,lifecycle-live,gesture-live,editor-live,release-live}.cjs"
   ],
   "results": [
     {
-      "name": "Model/editor assertions and ten Node test files",
+      "name": "Portable suite, native parser/format checks and plugin validator",
       "pass": true,
-      "scope": "Committed local tree; includes deferred-data preservation, rejection of removed helper operations and decoded helper paths."
+      "source": "55c0d77268b9b1f9ffd43c22542fea7e4ff0bacf",
+      "scope": "Exact input commit: Node tests (model, editor, agents incl. npm layout, Lua binding lifecycle under both Hyprland removal behaviours, right-click hit test, v0.1.0 migration, archive/runtime-hash gate)."
     },
     {
       "name": "Qt event tests",
       "pass": true,
+      "source": "55c0d77268b9b1f9ffd43c22542fea7e4ff0bacf",
       "checks": [
-        "21 passed, 0 failed; offscreen Qt 6.12 with host UI stubs, including BindingSetup registration, retry and teardown."
+        "32 passed, 0 failed: TouchHome, TouchWheel, BindingSetup, ActionIcon agent-mark fallbacks, ActionEditor custom icons."
       ]
     },
     {
-      "name": "QML parser, qmlformat layout, shell syntax, Lua fixtures, plugin validator and whitespace checks",
-      "pass": true
+      "name": "Host desktop: main wheel, real actions, theme change, Codex agent launch, focus restoration",
+      "pass": true,
+      "installed_runtime": "647eb40",
+      "harness": "tests/live.cjs --actions --theme --agents",
+      "checks": [
+        "14 passed"
+      ]
     },
     {
-      "name": "Complete tests/run",
+      "name": "Host desktop: compact sizes, Make something cool submenu, preview capture",
       "pass": true,
-      "scope": "Includes the release archive fixture and runtime-hash gate."
+      "installed_runtime": "647eb40",
+      "checks": [
+        "compact-live passed on rerun after one flaky hover-caption timeout",
+        "extras-live 4 passed",
+        "preview-live capture inspected"
+      ]
+    },
+    {
+      "name": "Host desktop: desktop right-click",
+      "pass": true,
+      "installed_runtime": "91f7bb4",
+      "checks": [
+        "4 passed: opens on empty named workspace, left-click and Super+right-click resize unchanged, app context menus pass through, no Hyprland config errors"
+      ]
+    },
+    {
+      "name": "Host desktop: remove, reinstall, disable/enable, compositor reload, summon cycles",
+      "pass": true,
+      "installed_runtime": "91f7bb4",
+      "checks": [
+        "Passed with the documented Omarchy disable fault recorded and worked around; plugin update skipped because the candidate was not yet on main"
+      ]
+    },
+    {
+      "name": "Host desktop: extra mouse-button gesture (virtual pointer)",
+      "pass": true,
+      "installed_runtime": "00b0bbe",
+      "checks": [
+        "5 passed: tap/dismiss, hold-move-release launch once, cancel, submenu release, binding removal"
+      ]
+    },
+    {
+      "name": "Host desktop: settings editor at scale 1.25",
+      "pass": true,
+      "installed_runtime": "d650ffd",
+      "checks": [
+        "12 passed: undo, centring at corners and edges, presets, catalog drag/assign, reordering, opening controls and conflicts, compositor reload recovery, command arguments, submenus, five to eight slots"
+      ]
+    },
+    {
+      "name": "Host desktop: upgrade from published v0.1.1 and fresh install",
+      "pass": true,
+      "installed_runtime": "683f9a9",
+      "checks": [
+        "6 passed; owner settings, shell.json, bindings, plugins, agents, default agent and display restored and compared against a 622-file snapshot afterwards"
+      ]
+    },
+    {
+      "name": "Host desktop: agent marks in the Agents menu",
+      "pass": true,
+      "installed_runtime": "bc82374",
+      "checks": [
+        "Screenshot inspected: Claude Code, Codex, Grok, OpenCode, Antigravity and Qwen Code each show their Omarchy mark"
+      ]
     }
   ],
+  "release_authorization": {
+    "version": "0.4.0",
+    "input_commit": "55c0d77268b9b1f9ffd43c22542fea7e4ff0bacf",
+    "actor": "Tom Ballard",
+    "statement": "ok, go through and do all that, and then create a draft release notes and I will hand write them myself",
+    "scope": "Owner instruction to merge, record acceptance, open and merge the PR, tag and create a draft release with the disclosed pending live coverage below. Publication of the draft remains owner-controlled."
+  },
   "pending": [
-    "Native Omarchy load/render, focus restoration and touch overlay/keyboard layering.",
-    "Physical touch press, cancellation, long press, rotation, portrait/landscape and accessibility.",
+    "Physical touch press, cancellation, long press, rotation, portrait/landscape and accessibility; touch overlay and keyboard layering.",
     "Real OmaTouch and Tablet Mode keyboard operations, provider loss/recovery, app text entry and Wi-Fi password entry.",
-    "Real window restoration/movement/close, brightness/audio/media and rotation controls.",
-    "Gesture/editor/upgrade/fresh-install regression harnesses on the new candidate.",
-    "Fractional scaling, physical multi-monitor, hotplug, shell reload, disable/removal and idle/battery observations.",
+    "Real window restoration/movement/close, brightness/audio/media and rotation controls from the touch home.",
+    "Physical extra mouse button (the gesture was exercised with a virtual pointer).",
+    "Physical multi-monitor, hotplug, idle/battery observations.",
     "ARM64/iPad mini 4 graphics, touch mapping and end-to-end tablet acceptance.",
     "Secure keyboard-free login, suspend/wake and unlock; inspected Omarchy lock view has no on-screen keyboard.",
-    "Live expanded-agent launches and unchanged default configuration; see docs/AGENTS-11.md.",
-    "Real Oma-Cast dismissal/focus handoff and custom-icon file chooser.",
-    "Record a committed v0.4.0 source and rerun acceptance before release.",
-    "Complete archive regression test in an environment permitting its child Node processes."
+    "Launches of agents other than Codex; Oma-Cast dismissal/focus handoff and the custom-icon file chooser.",
+    "Live runs used earlier dev/0.4 commits; the agent-mark change (ActionIcon.qml, Model.js, scripts/agents) was verified live by screenshot only, and the merge changed only workflows, tests and docs."
+  ],
+  "known_issues": [
+    "Omarchy's setEnabled(false) removes only one of a plugin's shell.json entries; with both a bar entry and a plugins[] record Orb stays loaded after Disable. A second disable works around it."
   ],
   "limitations": [
     "Qt event tests use real Qt input delivery with theme/UI stubs, not Quickshell, the Omarchy shell, or real keyboard providers.",
@@ -66,13 +128,11 @@
   "historical_evidence": "docs/history/v0.3.0-ACCEPTANCE.json",
   "qa_handoff": "docs/TOUCH.md#native-qa-handoff",
   "review_notes": [
-    "v0.4.0 defers named wheels, transfers, work setups and window pairs. Previous evidence does not establish acceptance for this revised candidate."
+    "v0.4.0 merges the published desktop-only v0.3.0 and keeps touch navigation; named wheels, transfers, work setups and window pairs remain deferred."
   ],
-  "working_tree_base": "69c9fd3306873ccfe4f9451bda09389fbb84da3c",
-  "working_tree_note": "Portable verification of the committed local tree above. input_commit is deliberately null; this is not source-bound release acceptance.",
   "runtime_sha256": {
     "ActionEditor.qml": "0932cbea05403617b48c7e2ac1c0503c4aa69c57ab1590e6c3966dfb741317c5",
-    "ActionIcon.qml": "2a9b2a5bf9e74bd12fcddbf7875751e54cb4cabe98b218709d9ba3b108411d0d",
+    "ActionIcon.qml": "4d35233fde9ea8bf3c86acf817cc41cae35fd80a20a1f6339c506f53e53d0900",
     "ActionPicker.qml": "e16f0a03f863e3ed38ea7c95212e0007e4263756970d62b71ea635a81d5d4e00",
     "AppLibraryCompat.qml": "bd7e0069836cd14e70dd0c8636373bd4988a3b7fd87b320a2a034679754fcc81",
     "assets/agents/claude.svg": "0df6dad23995f5a76c6db8cc2a4e646ff45bd7a0626ef98662a7025646e5eea1",
@@ -85,28 +145,32 @@
     "BindingLifecycle.js": "9bd14aa2d9085ebca4d3e4b2185dc7fc362720c13d3e15052ff880ed5b1f2a89",
     "BindingSetup.qml": "97d5d0ba34720d954a515cd8a5819e338271afdf9fe8bfbaaf8a78187bb5324d",
     "config.example.json": "1c8896c15b7a9922cf7b9db80b6307c7c05587110b29c6dbafe21ddccf079d88",
-    "desktop-click.lua": "3bb4bffe3838070b1cc16acddc34899f1570fdef4736ca6258726db4bf2b0734",
+    "desktop-click.lua": "cc4be773c899d0102d24e16bbd25b469b6fc3091658203f7045ac92e9425e63b",
     "EditorButton.qml": "c2100c920be415739f1ff2f73d025f7fc57ef9477c2e49a1494e03af36cf90c1",
     "EditorField.qml": "d814ca9453e7057c71ad8981160b7801d1485570463015fc66d1b8d19c9488d8",
     "EditorLabel.qml": "c77dfb5c75e5461b700635cb4095d34811f2c1c17515d4709fa534f11c733869",
     "Gesture.js": "639209bad903793b47642037baa50ad7f0531815f8ba1066399708fa528b2cc0",
     "LineIcon.qml": "6fadddd48d8bb3b3d9c3de566ffe54c897a090d4b4914a45862fc766d0ef9bdd",
     "manifest.json": "0620c8de7781dc16855d7613677fc2aefd9bf8d0ea1bdb38842dbc01691b81b8",
-    "Model.js": "ff3af3e9b32531d73b5cff5556e5401a0913fb5a30f8d315de8ccc0a71f56acd",
+    "Model.js": "fff21f04fb0bfdda729c7db1daaaa5a5554015fe91475251bde19ae8b1ac122d",
     "OrbOverlay.qml": "1f857be46bba325a1b7eb8aab81d73996bf61c342600ebd20df909af09d5d132",
     "scripts/agent": "06862a30e8f45e46a16f83cf8dcc6a4a60820c45dbaa51fc725eb45fb7d9b3c1",
-    "scripts/agents": "a0378c378945b62310f676a83f8175f70590fff4563ed189090ea5bab8269633",
+    "scripts/agents": "6a16fca8bdb9405ff9157985788af2f9bd916beded98ba8eca0b0588d8b878e6",
     "scripts/archive.mjs": "79c900b8cf7eede46a5a7d6aa116dde22e9eadccf2fea38ac96f12c9927e476c",
     "scripts/check.mjs": "c95a823f7f0f58f8035a9ecb15bfc7ff5c0ffd6044c7a9d3b9e8820af0486952",
     "scripts/common.mjs": "5cbb7fa86ab05f4e6c6cace36d2a445d4ea226ce608d49b5411150fb236330f8",
     "scripts/files": "a28fafd85a142c0d494e224a6dbc8b612076a976eb0ed5ddbad6acc033b19313",
     "scripts/launch": "00c2aa2c6313e575ffa0e281defeb8831d4f892f20923194d550c459322dc391",
-    "scripts/mouse-binding.lua": "17df8f6f7626312019e3033fd457b5bcc851ba468f2cb48d346fc11e36fd8598",
+    "scripts/legacy-desktop-click-v0.1.0.lua": "c42a67c82d5e4e45d58433a3b5e7ec2dd814fff878677ebb3c3fa483b7d328d4",
+    "scripts/mouse-binding.lua": "547e170617d636166d4e7ead9021efed5e025596bac4ff19b79fe3bfb2d8d6bc",
     "scripts/runtime-hashes.mjs": "b2d8deb7f77c6efb4b049c0dd71189bdc75bfe5e5a1abaedb21603d15f2bb54e",
-    "scripts/setup": "0d8150c10ac68f059ab57caa95c6bb6eb4409c4941bbe8061b947e056a4c5d41",
+    "scripts/setup": "3748ef58dfa81ad8664cbc3bd76fff99c60b8a1ee39026e55dedcad09cc56353",
     "scripts/touch": "5209760e8f7b471b0deb0a9784d83b118c116d6f88f9d088e185050a77f354ba",
     "SettingsPanel.qml": "a45846adea42f0e192e93661a4f3c505c43dc2252ba3180d929efb0aa1640a5c",
     "ShortcutHistory.js": "671e3029002e6fbfa79f8c45611c4cc15e9af4e3e1eeceb387ecf8900dd97f66",
+    "tests/qml/fixtures/custom icon.svg": "b9afb0483ab778cdbeef9419b630a96cba1283cb83e8a42c1b8174b0e58bbcbb",
+    "tests/qml/fixtures/omarchy/shell/plugins/agents/assets/agy-light.svg": "9567cdb90cfe59ed9939dcf249b0581959b073ed027fb8ed10f5a27e26b52694",
+    "tests/qml/fixtures/omarchy/shell/plugins/agents/assets/qwen.svg": "9e5173442ff86e490334763c92469a1b9fc6d340029da233a6d2720ce1c42fe5",
     "tests/qml/stubs/qs/Commons/Color.qml": "b79eacf83164ab02dd560401ecac6500ad0c7970d28d01a7478dc7c07c9e444b",
     "tests/qml/stubs/qs/Commons/qmldir": "6c3cb73154182edb57f482d753a3b60378cc83b12bbf6af9f9dd0866e6014e5d",
     "tests/qml/stubs/qs/Commons/Style.qml": "b13049f345f33c8e97352655480f48f6fa7ed5b7e55bba3f03aa4dc3d7a6ae7f",
@@ -119,7 +183,9 @@
     "tests/qml/stubs/Quickshell/Io/qmldir": "65c7e09efcc6c905dfa68032cfdcc4dfc609257531edde001bf2c17b86b34dd9",
     "tests/qml/stubs/Quickshell/Io/StdioCollector.qml": "17bcc4bfcce15e88ad1d3053c0c1fd84c50be0aa9ad56621c8c86a2a0fb9d58f",
     "tests/qml/stubs/Quickshell/qmldir": "e507ff2b70c8ac772c7d6651cdc47574f832f714f0a9481d80038c26b3c3d099",
-    "tests/qml/stubs/Quickshell/Quickshell.qml": "0a116f84902de85ab7925b2f0900e5cc093d6227e49b2900cff8e344d7f2eafc",
+    "tests/qml/stubs/Quickshell/Quickshell.qml": "a1737921267c780470d46d2eec0054d304cb8807d5b6c5d3fb1f2f1c1967c6c1",
+    "tests/qml/tst_ActionEditor.qml": "87aa89d0f599da7deadff313c08966e3befd7db04a819a1d6f6b6fd5d17c6e08",
+    "tests/qml/tst_ActionIcon.qml": "e35d9fc54123514e18e9cb1d1de64f5fb2f997e7b323eb85911bfa420dbbe6a2",
     "tests/qml/tst_BindingSetup.qml": "1f5898d8e677110b4d948fa2a62ae0c3ab4b371b99b2b9ed1693325ce0a4fd70",
     "tests/qml/tst_TouchHome.qml": "383acffe4b3dd9e68c36d927db18fc29c5b7a7960d46a868622be9955cba27d0",
     "tests/qml/tst_TouchWheel.qml": "e7d770c040916f2e5876628509d1f47e1235da1f8100d86adfa12f944db1791e",
@@ -131,7 +197,7 @@
     "TouchOptions.qml": "6bb158df9ed131e4ef84b222826d77cdeb312fd50209e7db2304dfefcb692e60",
     "TouchWheel.qml": "3e8dc6e3069b5c5b91e8bd878b989c86d41b4cbc91254a9178e0a0e85d67b24a",
     "TouchWidget.qml": "6bd98f70a01777e66e314149f6217c478c9257bf0e6399898549154b88429eda",
-    "Wheel.qml": "be4693bfc95864600f9cf8d57b7392bec81d1a43d284aa7e62db608cd420c2bd",
+    "Wheel.qml": "6246b35cbb3a9d7ce6176a430ab19c526f1d8c86bc0fdae8da5199fa09d44f9a",
     "WheelPreview.qml": "25b6e09af8feb2381edc0516acaf2696f9e56adcf855293ff61e3c6a3e091e9f",
     "WheelSurface.qml": "ba3379cac68db36ffc771061f1e8a75f40d5d8c336668c148092647788d1550e"
   }
