@@ -105,7 +105,8 @@ function action(a, depth) {
         && JSON.stringify(a.command) === '["omarchy","launch","nautilus"]') {
         out.menu = "files"; return out;
     }
-    // Preserve old setup slots as inactive placeholders; never launch them.
+    // DEFERRED(wheels-setups): preserve old setup slots as inactive placeholders;
+    // never launch them. Revisit when work setups return (see docs/WHEELS.md).
     if (a.menu === "setups" && depth === 0 && !a.command && !a.children) { out.menu = a.menu; return out; }
     if ((a.menu === "agents" || a.menu === "files") && depth === 0 && !a.command && !a.children) { out.menu = a.menu; return out; }
     if (Array.isArray(a.children) && depth === 0 && !a.command && !a.menu && a.children.length > 0 && a.children.length <= 12) {

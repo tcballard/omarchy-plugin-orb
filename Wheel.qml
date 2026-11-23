@@ -259,6 +259,7 @@ Item {
         if (opened && index === -2) { activateHub(); return; }
         if (!opened || index < 0 || index >= selectionCount) return;
         var action = wheelActions[index];
+        // DEFERRED(wheels-setups): inert placeholder; see docs/WHEELS.md.
         if (action.menu === "setups") {
             touchBackend.error = "Work setups are deferred to a future release. Replace this shortcut in Settings.";
             return;
