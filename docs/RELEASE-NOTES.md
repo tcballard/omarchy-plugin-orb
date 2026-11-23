@@ -5,6 +5,9 @@ Orb focuses on custom icons, mouse-button gestures, installed agents and touch/t
 - Defer named wheels, wheel import/export, saved work setups and split/swap controls to a future release; retain existing saved data.
 - Discover nine additional installed agents, retaining offline discovery and the existing default agent.
 - Show each installed agent's own mark (Antigravity, OpenCode, Qwen Code, Copilot, Cursor and others) from Omarchy's Agents panel instead of a generic icon.
+- List npm-installed agents such as OpenCode, Qwen Code, Kimi and Kilo in the Agents menu when Orb runs inside the shell.
+- Open Orb on desktop right-click under current Omarchy's full-screen bar, including on named workspaces.
+- Keep the extra-mouse-button gesture working after Orb reloads or updates on Hyprland 0.57.1, which no longer clears its release binding automatically.
 - Launch shortcuts and list installed agents when Orb is installed under a path containing spaces or other escaped characters.
 - Cover overlay output selection, deferred reveal, close races, reserved geometry and hotplug with regression tests.
 
@@ -16,6 +19,8 @@ Orb focuses on custom icons, mouse-button gestures, installed agents and touch/t
 - Pick a custom icon from a local image, and use the larger shortcut editor controls. The optional extra mouse button supports tap-to-open or hold, point and release.
 
 Thanks to Michal Mazurek for the original extra-button contribution. Hardware and keyboard integrations use the existing Tablet Mode and OmaTouch projects.
+
+Known Omarchy issue: if Orb's bar entry and an older menu entry are both in your shell settings, Disable leaves Orb loaded; run `omarchy plugin disable io.github.tcballard.orb` a second time until Omarchy fixes this.
 
 Physical touch, provider layering, ARM64/iPad hardware and the new mouse gesture still need native acceptance. Secure keyboard-free unlock needs support inside Omarchy’s lock screen. This release does not yet make Orb an official Omarchy default.
 

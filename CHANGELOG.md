@@ -5,6 +5,9 @@
 - Defer named wheels, wheel import/export, saved work setups and split/swap controls to a future release; retain existing saved data.
 - Discover nine additional installed agents, retaining offline discovery and the existing default agent.
 - Show each installed agent's own mark (Antigravity, OpenCode, Qwen Code, Copilot, Cursor and others) from Omarchy's Agents panel instead of a generic icon.
+- List npm-installed agents such as OpenCode, Qwen Code, Kimi and Kilo in the Agents menu when Orb runs inside the shell.
+- Open Orb on desktop right-click under current Omarchy's full-screen bar, including on named workspaces.
+- Keep the extra-mouse-button gesture working after Orb reloads or updates on Hyprland 0.57.1, which no longer clears its release binding automatically.
 - Launch shortcuts and list installed agents when Orb is installed under a path containing spaces or other escaped characters.
 - Cover overlay output selection, deferred reveal, close races, reserved geometry and hotplug with regression tests.
 
