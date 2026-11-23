@@ -569,8 +569,6 @@ Item {
     function status() {
         return JSON.stringify({
                                   opened: opened,
-                                  pluginEnabled: pluginEnabled,
-                                  pluginRegistryEnabled: pluginRegistry ? pluginRegistry.enabled : null,
                                   bindingOwner: bindingOwner,
                                   positioned: positioned,
                                   selected: selected,
