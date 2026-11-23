@@ -101,3 +101,15 @@ test('launch adapters preserve argv, no prompts or bypass flags, and the default
   assert.equal(f.run('agent',['amp; true']).status,1);
   assert.equal(fs.existsSync(f.env.LOG),false);
 });
+test('npm-backed mise agents resolve from node_modules/.bin when PATH has only shims', t => {
+  // The shell's PATH holds only mise shims/wrappers, which discovery skips.
+  const f=fixture(t); const entries={};
+  for (const id of ['opencode','qwen','kimi','kilo']) {
+    const base=path.join(f.dir,'mise installs',id,'1.0.0');
+    entries[id]=[{active:true,install_path:base}];
+    f.executable(id,path.join(base,'node_modules','.bin'));
+  }
+  f.inventory(entries);
+  assert.deepEqual(f.menu().map(r=>r.command.at(-1)),['opencode','kimi','qwen','kilo']);
+  assert.equal(f.run('agents',['--resolve','qwen']).stdout.trim(),path.join(f.dir,'mise installs','qwen','1.0.0','node_modules','.bin','qwen'));
+});

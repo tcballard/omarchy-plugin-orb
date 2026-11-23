@@ -24,7 +24,8 @@ resolve() {
   candidate="$HOME/.local/bin/$executable"
   installed_binary "$candidate" && { printf '%s\n' "$candidate"; return; }
   for base in "${install_bases[@]}"; do
-    for candidate in "$base/bin/$executable" "$base/$executable"; do
+    # npm-backed mise tools install their executable under node_modules/.bin.
+    for candidate in "$base/bin/$executable" "$base/$executable" "$base/node_modules/.bin/$executable"; do
       installed_binary "$candidate" && { printf '%s\n' "$candidate"; return; }
     done
   done
