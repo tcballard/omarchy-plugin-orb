@@ -20,6 +20,9 @@ const saved = {workspace:json('hyprctl','activeworkspace','-j').name, pointer:js
 const monitor = json('hyprctl','monitors','-j').find(m=>m.focused);
 assert.equal(monitor.scale,1,'This XPS harness requires scale 1');
 assert.equal(monitor.transform,0);
+// Orb keeps a 12px margin inside the monitor's reserved (bar) space.
+const [resL,resT,resR,resB] = monitor.reserved || [0,0,0,0];
+const edge = {left:resL+12, top:resT+12, right:monitor.width-resR-12, bottom:monitor.height-resB-12};
 const move = (x,y,button=0) => run(pointer,Math.round(x),Math.round(y),monitor.width,monitor.height,button);
 const report = [];
 const artifacts = path.join(__dirname,'../artifacts');
@@ -57,10 +60,10 @@ function layers() {
     await open(); await open(); assert.equal(layers().filter(n=>n==='omarchy-plugin-orb').length,1);
     ipc('shell','toggle',id,'{}'); assert.equal(status().opened,false);
     pass('12 open/cancel cycles, repeated summon and toggle, one layer');
-    for(const [x,y] of [[1,31],[1918,31],[1,1198],[1918,1198]]) {
+    for(const [x,y] of [[resL+1,resT+1],[monitor.width-resR-2,resT+1],[resL+1,monitor.height-resB-2],[monitor.width-resR-2,monitor.height-resB-2]]) {
       move(x,y);s=await open();
-      assert.ok(s.x>=12 && s.y>=42);
-      assert.ok(s.x+s.diameter<=1908 && s.y+s.diameter+38<=1188);
+      assert.ok(s.x>=edge.left && s.y>=edge.top);
+      assert.ok(s.x+s.diameter<=edge.right && s.y+s.diameter+38<=edge.bottom);
       key('Escape');
     }
     pass('All four physical screen corners stay inside the bar and monitor bounds');
@@ -80,6 +83,11 @@ function layers() {
         if(index===1) {
           const angle=(index*60-90)*Math.PI/180;
           move(s.x+s.diameter/2+Math.cos(angle)*s.diameter*.33,s.y+s.diameter/2+Math.sin(angle)*s.diameter*.33,272);
+        } else if(index === 2) {
+          // Files is a built-in submenu of locations; open Home from it.
+          key('3');key('Return');
+          assert.equal(status().submenu,'Files');
+          key('1');key('Return');
         } else if(index >= 4) {
           key('5');key('Return');
           assert.equal(status().submenu,'Settings');
@@ -94,7 +102,7 @@ function layers() {
           }
           const names=layers();return names.some(n=>expected.test(n))?{layers:names.filter(n=>expected.test(n))}:false;
         },`${label} did not open`,9000);
-        assert.equal(status().lastAction,label);
+        assert.equal(status().lastAction,index===2?'Home':label);
         pass(`Real action: ${label}`,result);
         // Only close brand-new test windows, never existing user windows/tabs.
         if(index<3) {
@@ -134,8 +142,8 @@ function layers() {
       await until(()=>!status().loading&&status().items.length,'Agents did not reload');
     }
     const submenu=status();
-    assert.ok(submenu.menuX>=12 && submenu.menuY>=42);
-    assert.ok(submenu.menuX+submenu.menuWidth<=1908 && submenu.menuY+submenu.menuHeight<=1188);
+    assert.ok(submenu.menuX>=edge.left && submenu.menuY>=edge.top);
+    assert.ok(submenu.menuX+submenu.menuWidth<=edge.right && submenu.menuY+submenu.menuHeight<=edge.bottom);
     key('Down');assert.equal(status().selected,0);
     key('Escape');assert.equal(status().submenu,'');assert.equal(status().opened,true);
     key('Escape');assert.equal(status().opened,false);
