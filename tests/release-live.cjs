@@ -68,7 +68,16 @@ async function ready(){
     assert.equal(status().setupError,'');
 }
 async function restart(){run('omarchy','restart','shell');await ready();}
-async function openSettings(){ipc('shell','summon',id,'{}');await until(()=>status().ready&&status().revealed&&status().opacity===1);await sleep(180);key('Home');key('Return');await until(()=>status().settingsOpen);}
+async function openSettings(){
+    // The shell's file watcher can reload Orb just after an install; if the
+    // instance goes away mid-step, wait for it to settle and try again.
+    for(let attempt=0;;attempt++){
+        try{
+            ipc('shell','summon',id,'{}');await until(()=>status().ready&&status().revealed&&status().opacity===1);await sleep(180);
+            key('Home');key('Return');await until(()=>status().settingsOpen);return;
+        }catch(error){if(attempt>=2)throw error;await ready();}
+    }
+}
 (async()=>{try{
     run('git','clone','--bare','--quiet',repo,origin);
     run('git','--git-dir='+origin,'update-ref','refs/heads/release-fixture',legacy);
