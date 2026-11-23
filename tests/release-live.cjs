@@ -55,7 +55,18 @@ async function remove(){
     assert.ok(!fs.existsSync(target));
     assert.ok(!JSON.stringify(json('hyprctl','layers','-j')).includes('omarchy-plugin-orb'));
 }
-async function ready(){await until(()=>status().setupReady&&status().version===JSON.parse(fs.readFileSync(path.join(repo,'manifest.json'),'utf8')).version,'Candidate failed to load/setup');assert.equal(status().setupError,'');}
+async function ready(){
+    const version=JSON.parse(fs.readFileSync(path.join(repo,'manifest.json'),'utf8')).version;
+    // The shell's file watcher can reload Orb again shortly after a restart or update;
+    // wait until one instance has stayed loaded for two seconds.
+    for(let attempt=0;attempt<10;attempt++){
+        await until(()=>status().setupReady&&status().version===version,'Candidate failed to load/setup');
+        const owner=status().bindingOwner;await sleep(2000);
+        let same=false;try{same=status().bindingOwner===owner&&status().setupReady;}catch{}
+        if(same)break;
+    }
+    assert.equal(status().setupError,'');
+}
 async function restart(){run('omarchy','restart','shell');await ready();}
 async function openSettings(){ipc('shell','summon',id,'{}');await until(()=>status().ready&&status().revealed&&status().opacity===1);await sleep(180);key('Home');key('Return');await until(()=>status().settingsOpen);}
 (async()=>{try{
