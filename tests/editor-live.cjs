@@ -1,7 +1,10 @@
-// Run only inside an owned omadev nest. All input/configuration stays in that nest.
+// Runs in an owned omadev nest, or on the idle host desktop with ORB_LIVE_HOST=1.
+// It saves and restores Orb's settings either way.
 const {execFileSync:exec,spawnSync}=require('node:child_process');
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
-assert.ok(process.env.OMADEV_SLOT && process.env.OMADEV_OWNER,'Run through omadev, never on the host desktop');
+const onHost=process.env.ORB_LIVE_HOST==='1';
+if(onHost)require('./host-desktop.cjs');
+else assert.ok(process.env.OMADEV_SLOT && process.env.OMADEV_OWNER,'Run through omadev, or set ORB_LIVE_HOST=1 on an idle host desktop');
 const repo=path.resolve(__dirname,'..'),id='io.github.tcballard.orb';
 const run=(command,...args)=>exec(command,args.map(String),{encoding:'utf8',timeout:15000}).trim();
 const json=(...args)=>JSON.parse(run(...args)),ipc=(...args)=>run('omarchy-shell',...args),status=()=>JSON.parse(ipc(id,'status'));
@@ -12,8 +15,8 @@ const chord=(modifier,value)=>run('wtype','-M',modifier,'-k',value,'-m',modifier
 const text=value=>run('wtype','--',value);
 const monitor=json('hyprctl','monitors','-j').find(m=>m.focused),pointer=path.join(repo,'artifacts/input/pointer');
 const move=(x,y,button=0,end)=>run(pointer,Math.round(x),Math.round(y),monitor.width,monitor.height,button,...(end?end.map(Math.round):[]));
-const config=path.join(process.env.XDG_CONFIG_HOME,'omarchy/orb.json');
-assert.ok(config.startsWith(process.env.OMADEV_HOME+'/'),'Configuration must belong to the nest');
+const config=path.join(process.env.XDG_CONFIG_HOME||path.join(process.env.HOME,'.config'),'omarchy/orb.json');
+if(!onHost)assert.ok(config.startsWith(process.env.OMADEV_HOME+'/'),'Configuration must belong to the nest');
 const oldText=fs.readFileSync(config,'utf8');
 let s;
 const fixture=JSON.parse(fs.readFileSync(path.join(repo,'config.example.json'),'utf8'));
