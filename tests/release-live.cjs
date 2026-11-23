@@ -1,21 +1,38 @@
-// Real plugin-manager install/upgrade/remove, restricted to an owned nest.
+// Real plugin-manager install/upgrade/remove in an owned nest, or on the idle host
+// desktop with ORB_LIVE_HOST=1 (the installed checkout is reinstalled afterwards).
 const {execFileSync:exec,spawnSync}=require('node:child_process');
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
-assert.ok(process.env.OMADEV_SLOT&&process.env.OMADEV_OWNER,'Run only in an owned omadev nest');
+const onHost=process.env.ORB_LIVE_HOST==='1';
+if(onHost)require('./host-desktop.cjs');
+else assert.ok(process.env.OMADEV_SLOT&&process.env.OMADEV_OWNER,'Run in an owned omadev nest, or set ORB_LIVE_HOST=1 on an idle host desktop');
 const repo=path.resolve(__dirname,'..'),id='io.github.tcballard.orb';
 const run=(cmd,...args)=>exec(cmd,args.map(String),{cwd:repo,encoding:'utf8',timeout:90000}).trim();
 const json=(...args)=>JSON.parse(run(...args)),ipc=(...args)=>run('omarchy-shell',...args),status=()=>JSON.parse(ipc(id,'status'));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(check,message){for(let i=0;i<140;i++){try{if(check())return;}catch{}await sleep(100);}throw Error(message||'Timed out');}
-const root=path.join(process.env.XDG_CONFIG_HOME,'omarchy'),target=path.join(root,'plugins',id),config=path.join(root,'orb.json'),shell=path.join(root,'shell.json');
-assert.ok(fs.realpathSync(root).startsWith(process.env.OMADEV_HOME+'/'));
-assert.ok(fs.lstatSync(target).isSymbolicLink(),'Start with the nest plugin link, never an existing checkout');
-assert.equal(fs.realpathSync(target),repo);
+const root=path.join(process.env.XDG_CONFIG_HOME||path.join(process.env.HOME,'.config'),'omarchy'),target=path.join(root,'plugins',id),config=path.join(root,'orb.json'),shell=path.join(root,'shell.json');
+if(onHost){
+    // The host runs a clean git checkout of this exact commit; record how to put it back.
+    assert.ok(!fs.lstatSync(target).isSymbolicLink(),'Expected an installed git checkout on the host');
+    assert.equal(run('git','-C',target,'status','--porcelain'),'','Installed Orb has local changes');
+    assert.equal(run('git','-C',target,'rev-parse','HEAD'),run('git','rev-parse','HEAD'),'Installed Orb is not this commit');
+}else{
+    assert.ok(fs.realpathSync(root).startsWith(process.env.OMADEV_HOME+'/'));
+    assert.ok(fs.lstatSync(target).isSymbolicLink(),'Start with the nest plugin link, never an existing checkout');
+    assert.equal(fs.realpathSync(target),repo);
+}
+const hostOrigin=onHost?run('git','-C',target,'remote','get-url','origin'):'',hostBranch=onHost?run('git','-C',target,'branch','--show-current'):'';
 const source=run('git','rev-parse','HEAD');assert.equal(run('git','status','--porcelain'),'','Commit the candidate before lifecycle acceptance');
 const legacy='343207fe59ee08875b5f263337c72c8b957ce583';
 run('git','merge-base','--is-ancestor',legacy,source);
-const oldConfig=fs.readFileSync(config,'utf8'),oldShell=fs.readFileSync(shell,'utf8'),link=fs.readlinkSync(target);
-const unrelatedShell=value=>{const s=JSON.parse(value);s.plugins=(s.plugins||[]).filter(p=>p.id!==id);return s;};
+const oldConfig=fs.readFileSync(config,'utf8'),oldShell=fs.readFileSync(shell,'utf8'),link=onHost?'':fs.readlinkSync(target);
+// Removing Orb also removes its own plugin entry and bar widget; everything else must survive.
+const unrelatedShell=value=>{
+    const s=JSON.parse(value);s.plugins=(s.plugins||[]).filter(p=>p.id!==id);
+    for(const [section,items] of Object.entries(s.bar?.layout||{}))
+        if(Array.isArray(items))s.bar.layout[section]=items.filter(item=>(item?.id??item)!==id);
+    return s;
+};
 const baselineErrors=run('hyprctl','configerrors'),isOrb=b=>/^(Orb shortcut wheel|Orb on empty desktop|Orb mouse button) \[orb:/.test(b.description||'');
 const binds=()=>json('hyprctl','binds','-j').filter(isOrb);
 const key=k=>run('wtype','-s','80','-k',k,'-s','80');
@@ -77,7 +94,17 @@ async function openSettings(){ipc('shell','summon',id,'{}');await until(()=>stat
 }catch(error){report.status='failed';report.error=error.stack;throw error;
 }finally{
     try{if(fs.existsSync(target))await remove();}catch(error){report.cleanup_error=error.message;}
-    if(!fs.existsSync(target))fs.symlinkSync(link,target);
+    if(!fs.existsSync(target)){
+        if(!onHost)fs.symlinkSync(link,target);
+        else{
+            // Reinstall this candidate as a normal checkout tracking its original branch.
+            run('omarchy','plugin','add',repo,'--enable','--yes');
+            run('git','-C',target,'remote','set-url','origin',hostOrigin);
+            run('git','-C',target,'fetch','--quiet','origin',hostBranch);
+            run('git','-C',target,'checkout','-q','-B',hostBranch,'FETCH_HEAD');
+            run('git','-C',target,'branch','-q','--set-upstream-to','origin/'+hostBranch);
+        }
+    }
     fs.writeFileSync(config,oldConfig);fs.writeFileSync(shell,oldShell);
     run('omarchy','restart','shell');await ready();
     fs.writeFileSync(path.join(repo,'artifacts/release-lifecycle-results.json'),JSON.stringify(report,null,2)+'\n');
