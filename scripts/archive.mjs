@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { root, readJSON, hash } from './template.mjs';
+import { root, readJSON, hash } from './common.mjs';
 import { check } from './check.mjs';
 
 try {
@@ -30,9 +30,7 @@ try {
   const changed=git('diff','--name-only',a.input_commit,'HEAD').split('\n').filter(Boolean);
   if(changed.some(f=>!f.startsWith('docs/')&&!['README.md','CREDITS.md'].includes(f)))throw Error('Runtime/build inputs changed after acceptance');
   if(fs.readFileSync(path.join(root,'VERSION'),'utf8').trim()!==tag.slice(1))throw Error('VERSION must match tag');
-  if(c.kind==='plugin' && readJSON(path.join(root,'manifest.json')).version!==tag.slice(1))throw Error('Manifest version must match tag');
-  if(c.kind==='app' && !fs.readFileSync(path.join(root,'Cargo.toml'),'utf8').includes(`version = "${tag.slice(1)}"`))throw Error('Cargo version must match tag');
-  if(c.kind==='package' && !fs.readFileSync(path.join(root,`pkgbuilds/${c.slug}/PKGBUILD`),'utf8').includes(`pkgver=${tag.slice(1)}\n`))throw Error('Package version must match tag');
+  if(readJSON(path.join(root,'manifest.json')).version!==tag.slice(1))throw Error('Manifest version must match tag');
   const out=path.join(root,'dist');fs.mkdirSync(out,{recursive:true});
   const archive=path.join(out,`${c.slug}-${tag}-source.tar.gz`);
   const r=spawnSync('git',['archive','--format=tar.gz',`--prefix=${c.slug}/`,'-o',archive,'HEAD'],{cwd:root,encoding:'utf8'});

@@ -38,7 +38,7 @@ test('release source preserves checks and binds manifests, SBOM and checksums',(
     for(const [name,hash] of Object.entries(sums))assert.equal(hash,digest(name));
     const unpack=path.join(temp,'unpack');fs.mkdirSync(unpack);run(repo,'tar',['-xzf',path.join(dir,release.artifacts[0].name),'-C',unpack]);
     const extracted=path.join(unpack,'omarchy-plugin-orb');
-    for(const required of ['tests/run','scripts/template.mjs','.template/project.json','.github/workflows/ci.yml'])assert.ok(fs.existsSync(path.join(extracted,required)));
+    for(const required of ['tests/run','scripts/common.mjs','.template/project.json','.github/workflows/ci.yml'])assert.ok(fs.existsSync(path.join(extracted,required)));
     run(extracted,process.execPath,['scripts/check.mjs']);run(extracted,process.execPath,['tests/model.cjs']);
     const denied=(releaseTag,pattern)=>{const r=spawnSync(process.execPath,['scripts/archive.mjs'],{cwd:repo,encoding:'utf8',env:{...process.env,RELEASE_TAG:releaseTag}});assert.ifError(r.error);assert.notEqual(r.status,0);assert.match(r.stderr+r.stdout,pattern);};
     git('tag','v9.9.9');denied('v9.9.9',/annotated tag/);
