@@ -2,9 +2,17 @@
 var icons = ["browser", "terminal", "files", "screenshot", "themes", "plugins", "agents", "settings", "codex", "claude", "grok", "postcard", "app", "create",
     "home", "recent", "starred", "downloads", "documents", "pictures", "music", "videos", "trash",
     "search", "link", "code", "calendar", "clock", "mail", "lock", "power", "cloud", "bookmark"];
+// Agent marks shipped by Omarchy's Agents panel (shell/plugins/agents/assets).
+// Valid in saved actions, but kept out of the icon picker.
+var agentMarks = ["claude", "codex", "grok", "agy", "copilot", "cursor", "deepseek", "devin", "hermes", "kimi",
+    "minimax", "muse", "opencode", "qwen"];
 function validIcon(value) {
-    return typeof value === "string" && (icons.indexOf(value) >= 0 ||
+    return typeof value === "string" && (icons.indexOf(value) >= 0 || agentMarks.indexOf(value) >= 0 ||
         (value.length <= 4096 && /^\/[^\x00-\x1f]*\.(svg|png|jpe?g|webp)$/i.test(value)));
+}
+// Convert a resolved file:// URL (e.g. a bundled helper) to a local path.
+function localPath(url) {
+    return decodeURIComponent(String(url).replace(/^file:\/\//, ""));
 }
 function iconUrl(value) {
     return validIcon(value) && value.charAt(0) === "/"
@@ -101,7 +109,8 @@ function action(a, depth) {
         && JSON.stringify(a.command) === '["omarchy","launch","nautilus"]') {
         out.menu = "files"; return out;
     }
-    // Old development-only setup slots remain valid but cannot launch.
+    // DEFERRED(wheels-setups): preserve old setup slots as inactive placeholders;
+    // never launch them. Revisit when work setups return (see docs/WHEELS.md).
     if (a.menu === "setups" && depth === 0 && !a.command && !a.children) { out.menu = a.menu; return out; }
     if ((a.menu === "agents" || a.menu === "files") && depth === 0 && !a.command && !a.children) { out.menu = a.menu; return out; }
     if (Array.isArray(a.children) && depth === 0 && !a.command && !a.menu && a.children.length > 0 && a.children.length <= 12) {
@@ -174,11 +183,13 @@ function mergeSettings(document, original, draft) {
         if (JSON.stringify(original.actions[i]) === JSON.stringify(draft.actions[i])) continue;
         if (current.config.actions.length !== original.actions.length)
             return { error: "Slots changed elsewhere. Reopen settings to load them." };
-        if (JSON.stringify(current.config.actions[i]) !== JSON.stringify(original.actions[i]) && JSON.stringify(current.config.actions[i]) !== JSON.stringify(draft.actions[i]))
+        var latest = JSON.stringify(current.config.actions[i]);
+        if (latest !== JSON.stringify(original.actions[i]) && latest !== JSON.stringify(draft.actions[i]))
             return { error: "Slot " + (i + 1) + " changed elsewhere. Reopen settings to load it." };
         result.actions[i] = draft.actions[i];
     }
-    var fields = ["diameter", "animation", "shape", "shortcut", "desktopRightClick", "mouseOpen", "mouseButton"];
+    var fields = ["diameter", "animation", "shape", "shortcut", "desktopRightClick", "mouseOpen", "mouseButton",
+        "inputMode", "touchEdge", "touchLayout", "touchPosition", "touchScale", "touchOutput", "touchKeyboard", "touchDrag"];
     for (var field = 0; field < fields.length; field++) {
         var name = fields[field];
         if (draft[name] === undefined || original[name] === draft[name]) continue;
@@ -188,6 +199,26 @@ function mergeSettings(document, original, draft) {
     }
     var checked = parse(JSON.stringify(result), null);
     return checked.error ? { error: checked.error } : { document: result, error: "" };
+}
+function touchSettings(value) {
+    var out = {}, choices = { inputMode: ["desktop", "touch", "auto"], touchEdge: ["right", "left"],
+        touchLayout: ["fan", "ring"], touchKeyboard: ["auto", "omatouch", "tablet"] };
+    for (var key in choices) {
+        out[key] = value[key] === undefined ? choices[key][0] : value[key];
+        if (choices[key].indexOf(out[key]) < 0) return { error: "Invalid " + key + " setting." };
+    }
+    out.touchPosition = value.touchPosition === undefined ? 0.7 : value.touchPosition;
+    out.touchScale = value.touchScale === undefined ? 1 : value.touchScale;
+    if (typeof out.touchPosition !== "number" || !isFinite(out.touchPosition) || out.touchPosition < 0 || out.touchPosition > 1)
+        return { error: "Touch button position must be between 0 and 1." };
+    if (typeof out.touchScale !== "number" || !isFinite(out.touchScale) || out.touchScale < 1 || out.touchScale > 1.5)
+        return { error: "Touch size must be between 1 and 1.5." };
+    out.touchOutput = value.touchOutput === undefined ? "" : value.touchOutput;
+    if (typeof out.touchOutput !== "string" || out.touchOutput.length > 128 || /[\x00-\x1f\x7f]/.test(out.touchOutput))
+        return { error: "Choose a connected touch display." };
+    if (value.touchDrag !== undefined && typeof value.touchDrag !== "boolean") return { error: "Drag selection must be on or off." };
+    out.touchDrag = value.touchDrag === true;
+    return { config: out, error: "" };
 }
 function parse(raw, fallback) {
     var value;
@@ -214,9 +245,13 @@ function parse(raw, fallback) {
     if (clash) return { config: fallback, error: clash };
     if (value.shape !== undefined && value.shape !== "circle" && value.shape !== "polygon")
         return { config: fallback, error: "Choose a circle or polygon wheel." };
-    return { config: { actions: actions, diameter: Math.max(220, Math.min(600, Number(value.diameter) || 240)), animation: value.animation !== false,
-        shape: value.shape || "circle", shortcut: activation.value, desktopRightClick: value.desktopRightClick === true,
-        mouseOpen: mouseOpen, mouseButton: mouse.value }, error: "" };
+    var touch = touchSettings(value);
+    if (touch.error) return { config: fallback, error: touch.error };
+    return { config: Object.assign(touch.config, {
+        actions: actions, diameter: Math.max(220, Math.min(600, Number(value.diameter) || 240)),
+        animation: value.animation !== false, shape: value.shape || "circle", shortcut: activation.value,
+        desktopRightClick: value.desktopRightClick === true, mouseOpen: mouseOpen, mouseButton: mouse.value
+    }), error: "" };
 }
 // Vertices align with actions; sector boundaries meet the middle of each edge.
 // One/two-entry submenu pages retain a circle because no polygon exists there.
@@ -250,5 +285,9 @@ function placement(px, py, width, height, reserved, preferred) {
         x: Math.max(left, Math.min(px - size / 2, left + availableW - size)),
         y: Math.max(top, Math.min(py - size / 2, top + availableH - size - footer)) };
 }
-if (typeof module !== "undefined") module.exports = { parse: parse, action: action, icons: icons, validIcon: validIcon, iconUrl: iconUrl, fileActions: fileActions, shortcut: shortcut, mouseButton: mouseButton, bindingSignature: bindingSignature, bindingConflict: bindingConflict, edgeRadius: edgeRadius,
-    move: move, hit: hit, placement: placement, mergeSettings: mergeSettings };
+if (typeof module !== "undefined") module.exports = {
+    parse: parse, localPath: localPath, touchSettings: touchSettings, action: action, icons: icons,
+    agentMarks: agentMarks, validIcon: validIcon, iconUrl: iconUrl, fileActions: fileActions, shortcut: shortcut, mouseButton: mouseButton,
+    bindingSignature: bindingSignature, bindingConflict: bindingConflict, edgeRadius: edgeRadius,
+    move: move, hit: hit, placement: placement, mergeSettings: mergeSettings
+};

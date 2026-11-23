@@ -3,10 +3,8 @@ const assert = require('node:assert/strict');
 const model = require('../Model.js');
 const defaults = require('../config.example.json');
 
-test('v0.3 settings edits retain deferred data and the current shortcut projection', () => {
+test('v0.4 settings edits retain deferred data and the current shortcut projection', () => {
   const document = structuredClone(defaults);
-  document.inputMode = 'touch';
-  document.touchKeyboard = 'omatouch';
   document.activeWheel = 'work';
   document.wheels = [{id:'work', name:'Work', actions:structuredClone(document.actions), note:'keep'}];
   document.setups = [{id:'coding', name:'Coding', apps:['terminal'], workspace:2, layout:'columns'}];
@@ -23,8 +21,6 @@ test('v0.3 settings edits retain deferred data and the current shortcut projecti
   assert.deepEqual(result.document.wheels, current.wheels);
   assert.deepEqual(result.document.setups, current.setups);
   assert.equal(result.document.activeWheel, 'work');
-  assert.equal(result.document.inputMode, 'touch');
-  assert.equal(result.document.touchKeyboard, 'omatouch');
   assert.deepEqual(result.document.actions[0], document.actions[0]);
   assert.equal(result.document.actions[1].label, 'My shortcut');
   assert.equal(result.document.diameter, 360);

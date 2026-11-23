@@ -1,13 +1,30 @@
 # Changelog
 
-## 0.3.0 — release candidate
+## 0.4.0 — in development
+
+- Open a touch home from a movable edge button or optional Orb bar entry, on the selected display.
+- Use labelled radial favourites, left/right layouts, adjustable target sizes, hold-to-edit and optional drag selection; small views retain a scrollable grid of large targets.
+- Browse apps and open Oma-Cast search; switch, restore, maximise, move and confirm-close windows without keyboard shortcuts.
+- Control brightness, sound, playback, network and provider-backed rotation; open an enabled on-screen keyboard for Orb’s text fields.
+- Choose Desktop, persistent Touch, or sensor-backed Automatic mode. Preserve existing desktop configuration and custom actions.
+- Keep keyboard space available, remap the keyboard above reopened panels, and cancel stale or interrupted touch actions.
+- Use larger, touch-sized controls in the shortcut and action editors.
+- Show each installed agent's own mark (Antigravity, OpenCode, Qwen Code, Copilot, Cursor and others) from Omarchy's Agents panel instead of a generic icon.
+- List npm-installed agents such as OpenCode, Qwen Code, Kimi and Kilo in the Agents menu when Orb runs inside the shell.
+- Open Orb on desktop right-click under current Omarchy's full-screen bar, including on named workspaces.
+- Keep the extra-mouse-button gesture working after Orb reloads or updates on Hyprland 0.57.1, which no longer clears its release binding automatically.
+- Launch shortcuts and list installed agents when Orb is installed under a path containing spaces or other escaped characters.
+
+Named wheels, import/export, saved work setups and split/swap controls remain deferred; existing saved data is kept. Physical touch, ARM64/iPad hardware and secure touch unlock are not yet verified.
+
+## 0.3.0 — 2026-10-30
 
 - Choose a built-in icon or local SVG, PNG, JPEG or WebP image for custom commands and submenus, including a file chooser.
 - Open Orb with an optional extra mouse button: tap to keep it open, or hold, point and release to launch. Centre/outside releases cancel; submenus remain open for a second selection.
 - Discover nine additional installed coding agents without installing software or changing the default agent.
 - Retain desktop keyboard/right-click controls and cover output selection, reveal timing and overlay lifecycle regressions.
 
-Thanks to Michal Mazurek for the original extra-button contribution. Touch/tablet navigation is planned for v0.4.0. Named wheels, import/export, saved work setups and split/swap controls are deferred to later releases.
+Thanks to Michal Mazurek for the original extra-button contribution.
 
 ## 0.2.0 — 2026-10-23
 

@@ -80,7 +80,7 @@
         "README.md",
         "CHANGELOG.md",
         "CREDITS.md",
-        "docs/MARKETPLACE-ISSUE.md",
+        "docs/history/v0.1.1-MARKETPLACE-ISSUE.md",
         "docs/RELEASE-NOTES.md"
       ],
       "runtime_and_workflows_unchanged": true,

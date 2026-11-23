@@ -1,15 +1,37 @@
-# Orb v0.3.0 — accepted for merge
+# Orb v0.4.0 release
 
-The owner accepted the candidate and disclosed coverage gaps on 2026-10-30 and requested PR #16 ready for merge. The owner will merge, write the release notes and publish; no merge, tag or release is performed automatically.
+v0.4.0 adds touch and tablet navigation, Omarchy's agent marks and fixes for
+current Omarchy and Hyprland on top of the published v0.3.0.
 
-The release includes custom icons with a file chooser, optional extra mouse-button gestures, expanded installed-agent discovery and desktop overlay fixes. Touch/tablet belongs to v0.4.0; named wheels, transfers, saved work setups and split/swap controls are deferred further.
+[Current acceptance](ACCEPTANCE.json) records the tested source and remaining
+gates. [v0.3.0 evidence](history/v0.3.0-ACCEPTANCE.json) is historical and does not
+establish acceptance for this candidate. Portable checks, QML parsing and Qt
+input tests with host stubs do not establish layer-shell focus, physical touch,
+real provider compatibility or iPad support.
 
-`docs/ACCEPTANCE.json` records the source identity, CI evidence and exact owner acceptance. Native cases without supplied results remain pending rather than being called passed. Manual host-desktop testing is valid; Omadev applies only to the guarded automated harnesses.
+Before tagging, run the native editor, gesture, upgrade, right-click and
+lifecycle checks on an idle desktop (`ORB_LIVE_HOST=1`) or in an owned Omadev
+nest, then the [touch QA handoff](TOUCH.md#native-qa-handoff)
+on target hardware. Record source SHA, shell/compositor versions, provider
+versions, architecture and display/scale/rotation details. Update acceptance
+only with observed results. Runtime changes invalidate earlier acceptance.
+After the recorded checks pass on the tree being accepted, record its exact
+runtime files with `node scripts/runtime-hashes.mjs --write`; without `--write`
+it lists stale entries. Never refresh the hashes without re-running the checks.
 
-Merge PR #16 using **Create a merge commit** to retain the accepted source in history. The release workflow supports the recorded owner acceptance through **allow_pending_live=true**, tied to the exact final main commit. It validates the archive before pushing a tag, creates a draft and verifies downloaded assets. The owner reviews and publishes that draft.
+The inspected Omarchy lock screen has no on-screen keyboard. Secure login and
+unlock, suspend/resume, touch mapping and output selection must work before
+claiming a complete keyboard-free tablet session or proposing Orb as the
+official tablet default. Do not bypass authentication with a normal overlay.
 
-- [Feature and user setup summary](RELEASE-SUMMARY.md)
-- [Cut the release](CUT-RELEASE.md)
-- [Optional additional desktop testing and rollback](DESKTOP-TEST.md)
+`scripts/archive.mjs` requires source-bound acceptance with current runtime
+hashes, a matching annotated tag and a clean checkout. Its existing pending-live override additionally requires
+explicit per-candidate release authorization recorded in `ACCEPTANCE.json`.
+Release through **Actions → Release source** on `main` with `tag`, the exact
+`expected_commit` and `allow_pending_live=true`, as in the
+[v0.3.0 cut](history/v0.3.0-CUT-RELEASE.md); it creates the tag and a draft.
+Do not tag or update the marketplace snapshot from portable evidence alone.
 
-The existing local v0.4.0 checkout remains separate. The release-notes file is still a draft for the owner to replace.
+[Release notes](RELEASE-NOTES.md) are the draft body for the GitHub release.
+Published records for [v0.3.0](history/v0.3.0-RELEASE.md) and
+[v0.1.1](history/v0.1.1-RELEASE.md) are retained separately.

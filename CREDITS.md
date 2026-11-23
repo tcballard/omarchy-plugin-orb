@@ -13,11 +13,11 @@ Template authorship: Tom Ballard, 2026, MIT. Project author: Tom Ballard.
 - Community badge: [omarchy-badges](https://github.com/tcballard/omarchy-badges), pinned to 75975e5b5bf75e7ede3764bcd2950046f7abfe2c.
 - Test-only virtual pointer protocol: copyright 2019 Josef Gajdusek, MIT. Full licence remains in tests/virtual-pointer.xml. [Upstream protocol](https://gitlab.freedesktop.org/wlroots/wlr-protocols/-/blob/master/unstable/wlr-virtual-pointer-unstable-v1.xml).
 
-`preview.png` is a real cropped Orb capture in an owned Omadev session on the XPS, including a portion of the active wallpaper. Tom Ballard confirmed on 2026-10-19 that he made the wallpaper and owns or has permission to submit the plugin and preview assets. It is a product screenshot, not a separately distributed wallpaper asset. Unpublished local test captures remain under ignored `artifacts/`. The current Settings captures use the default six shortcuts in Polygon mode; dimensions and hashes are recorded in [the acceptance evidence](docs/ACCEPTANCE.json). Earlier editor images retain their separate [capture record](docs/CATALOG-ACCEPTANCE.json).
+`preview.png` is a real cropped Orb capture in an owned Omadev session on the XPS, including a portion of the active wallpaper. Tom Ballard confirmed on 2026-10-19 that he made the wallpaper and owns or has permission to submit the plugin and preview assets. It is a product screenshot, not a separately distributed wallpaper asset. Unpublished local test captures remain under ignored `artifacts/`. The current Settings captures use the default six shortcuts in Polygon mode; dimensions and hashes are recorded in [the acceptance evidence](docs/ACCEPTANCE.json). Earlier editor images retain their separate [capture record](docs/history/CATALOG-ACCEPTANCE.json).
 
 ## Agent marks
 
-The unmodified SVG files in `assets/agents/` are copied from Omarchy’s agents panel at [27d215832cfb74d252d4cfed8519f645c76d8d9c](https://github.com/tcballard/omarchy/tree/27d215832cfb74d252d4cfed8519f645c76d8d9c/shell/plugins/agents/assets). The upstream MIT notice is retained in `assets/agents/LICENSE.omarchy`.
+The unmodified SVG files in `assets/agents/` are copied from Omarchy’s agents panel at [27d215832cfb74d252d4cfed8519f645c76d8d9c](https://github.com/tcballard/omarchy/tree/27d215832cfb74d252d4cfed8519f645c76d8d9c/shell/plugins/agents/assets). The upstream MIT notice is retained in `assets/agents/LICENSE.omarchy`. Other agent marks are not copied into Orb: they are loaded at runtime from the user's installed Omarchy.
 
 - Codex mark: OpenAI; white and dark variants. [Brand information](https://openai.com/brand/).
 - Claude mark: Anthropic; original orange colour. [Claude](https://claude.com/).

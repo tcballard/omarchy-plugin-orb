@@ -1,6 +1,8 @@
 const {execFileSync: exec} = require('node:child_process');
 const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict');
-assert.ok(process.env.OMADEV_SLOT && process.env.OMADEV_OWNER, 'Run only inside an owned omadev nest');
+const onHost = process.env.ORB_LIVE_HOST === '1';
+if (onHost) require('./host-desktop.cjs');
+else assert.ok(process.env.OMADEV_SLOT && process.env.OMADEV_OWNER, 'Run in an owned omadev nest, or set ORB_LIVE_HOST=1 on an idle host desktop');
 const repo = path.resolve(__dirname, '..'), id = 'io.github.tcballard.orb';
 const run = (cmd, ...args) => exec(cmd, args.map(String), {cwd: repo, encoding: 'utf8', timeout: 15000}).trim();
 const json = (...args) => JSON.parse(run(...args));
@@ -10,12 +12,18 @@ async function until(check, message) {
     for (let i = 0; i < 100; i++) { try { if (check()) return; } catch {} await sleep(100); }
     throw Error(message);
 }
-const root = path.join(process.env.XDG_CONFIG_HOME, 'omarchy');
-assert.ok(fs.realpathSync(root).startsWith(process.env.OMADEV_HOME + '/'), 'Configuration must be isolated to the nest');
+const root = path.join(process.env.XDG_CONFIG_HOME || path.join(process.env.HOME, '.config'), 'omarchy');
+if (!onHost) assert.ok(fs.realpathSync(root).startsWith(process.env.OMADEV_HOME + '/'), 'Configuration must be isolated to the nest');
 const config = path.join(root, 'orb.json'), original = fs.readFileSync(config, 'utf8');
 const installed = path.join(root, 'plugins', id);
-assert.ok(fs.lstatSync(installed).isSymbolicLink(), 'Start with an omadev plugin link');
-assert.equal(fs.realpathSync(installed), repo, 'The nest must be linked to this exact checkout');
+if (onHost) {
+    // The host installs a clean git checkout; it must be exactly this commit.
+    assert.equal(run('git', '-C', installed, 'status', '--porcelain'), '', 'Installed Orb has local changes');
+    assert.equal(run('git', '-C', installed, 'rev-parse', 'HEAD'), run('git', '-C', repo, 'rev-parse', 'HEAD'), 'Installed Orb is not this commit');
+} else {
+    assert.ok(fs.lstatSync(installed).isSymbolicLink(), 'Start with an omadev plugin link');
+    assert.equal(fs.realpathSync(installed), repo, 'The nest must be linked to this exact checkout');
+}
 const monitors = json('hyprctl', 'monitors', '-j');
 assert.equal(monitors.length, 1, 'This virtual-pointer fixture requires one monitor');
 const monitor = monitors[0];

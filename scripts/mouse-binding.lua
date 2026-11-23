@@ -49,10 +49,13 @@ local function orbMouseBinding(key)
   end)
   if not ok then pair.press:remove(); error(release) end
   pair.release = release
+  -- Hyprland 0.57.1 removes only the given handle; older releases cleared every
+  -- bind on the key, so the second remove is guarded for an already-cleared bind.
   function pair:remove()
     r.gesture = nil
     if r.gestureTimer then r.gestureTimer:set_enabled(false) end
-    self.press:remove()
+    pcall(function() self.press:remove() end)
+    pcall(function() self.release:remove() end)
   end
   return pair
 end

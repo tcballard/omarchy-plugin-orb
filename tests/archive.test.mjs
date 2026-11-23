@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
+import {runtimeHashes,staleHashes} from '../scripts/runtime-hashes.mjs';
 
 test('release source preserves checks and binds manifests, SBOM and checksums',()=>{
   const source=path.resolve(import.meta.dirname,'..');
@@ -21,7 +22,7 @@ test('release source preserves checks and binds manifests, SBOM and checksums',(
     git('init','-q');git('config','user.name','Orb archive test');git('config','user.email','test@example.invalid');git('config','commit.gpgsign','false');git('config','tag.gpgsign','false');
     git('add','.');git('commit','-qm','Synthetic runtime fixture');
     const input=git('rev-parse','HEAD');
-    fs.writeFileSync(path.join(repo,'docs/ACCEPTANCE.json'),JSON.stringify({status:'passed',input_commit:input,platform:'Synthetic archive fixture; not desktop acceptance',date:'2026-10-19',commands:['fixture'],results:['fixture']}));
+    fs.writeFileSync(path.join(repo,'docs/ACCEPTANCE.json'),JSON.stringify({status:'passed',input_commit:input,platform:'Synthetic archive fixture; not desktop acceptance',date:'2026-10-19',commands:['fixture'],results:['fixture'],runtime_sha256:runtimeHashes(repo)}));
     git('add','docs/ACCEPTANCE.json');git('commit','-qm','Synthetic evidence');
     const version=fs.readFileSync(path.join(repo,'VERSION'),'utf8').trim(),tag='v'+version;
     git('tag','-a',tag,'-m','Temporary fixture tag');
@@ -38,11 +39,11 @@ test('release source preserves checks and binds manifests, SBOM and checksums',(
     for(const [name,hash] of Object.entries(sums))assert.equal(hash,digest(name));
     const unpack=path.join(temp,'unpack');fs.mkdirSync(unpack);run(repo,'tar',['-xzf',path.join(dir,release.artifacts[0].name),'-C',unpack]);
     const extracted=path.join(unpack,'omarchy-plugin-orb');
-    for(const required of ['tests/run','scripts/template.mjs','.template/project.json','.github/workflows/ci.yml'])assert.ok(fs.existsSync(path.join(extracted,required)));
+    for(const required of ['tests/run','scripts/common.mjs','.template/project.json','.github/workflows/ci.yml'])assert.ok(fs.existsSync(path.join(extracted,required)));
     run(extracted,process.execPath,['scripts/check.mjs']);run(extracted,process.execPath,['tests/model.cjs']);
     const denied=(releaseTag,pattern)=>{const r=spawnSync(process.execPath,['scripts/archive.mjs'],{cwd:repo,encoding:'utf8',env:{...process.env,RELEASE_TAG:releaseTag}});assert.ifError(r.error);assert.notEqual(r.status,0);assert.match(r.stderr+r.stdout,pattern);};
     git('tag','v9.9.9');denied('v9.9.9',/annotated tag/);
-    const pending={status:'pending-live',version,input_commit:input,platform:'Synthetic fixture; no desktop acceptance',date:'2026-10-20',commands:['fixture'],results:['portable fixture'],pending:['live desktop'],release_authorization:{version,input_commit:input,actor:'Fixture owner',statement:'Release with documented live gaps'}};
+    const pending={status:'pending-live',version,input_commit:input,platform:'Synthetic fixture; no desktop acceptance',date:'2026-10-20',commands:['fixture'],results:['portable fixture'],pending:['live desktop'],runtime_sha256:runtimeHashes(repo),release_authorization:{version,input_commit:input,actor:'Fixture owner',statement:'Release with documented live gaps'}};
     fs.writeFileSync(path.join(repo,'docs/ACCEPTANCE.json'),JSON.stringify(pending));
     git('add','docs/ACCEPTANCE.json');git('commit','-qm','Synthetic limited release authorization');
     git('tag','-d',tag);git('tag','-a',tag,'-m','Temporary authorized fixture tag');
@@ -51,5 +52,18 @@ test('release source preserves checks and binds manifests, SBOM and checksums',(
     assert.notEqual(wrong.status,0);assert.match(wrong.stderr,/Record actual acceptance/);
     run(repo,process.execPath,['scripts/archive.mjs'],{RELEASE_TAG:tag,RELEASE_ACCEPT_PENDING_LIVE:git('rev-parse','HEAD')});
     fs.appendFileSync(path.join(repo,'README.md'),'\nDirty fixture\n');denied(tag,/clean checkout/);
+    git('checkout','-q','README.md');
+    const staleEvidence={...pending,runtime_sha256:{...pending.runtime_sha256,'Wheel.qml':'0'.repeat(64)}};
+    fs.writeFileSync(path.join(repo,'docs/ACCEPTANCE.json'),JSON.stringify(staleEvidence));
+    git('add','docs/ACCEPTANCE.json');git('commit','-qm','Synthetic stale evidence');
+    git('tag','-d',tag);git('tag','-a',tag,'-m','Temporary stale fixture tag');
+    const stale=spawnSync(process.execPath,['scripts/archive.mjs'],{cwd:repo,encoding:'utf8',env:{...process.env,RELEASE_TAG:tag,RELEASE_ACCEPT_PENDING_LIVE:git('rev-parse','HEAD')}});
+    assert.notEqual(stale.status,0);assert.match(stale.stderr,/runtime_sha256 is stale \(changed: Wheel\.qml\)/);
   }finally{fs.rmSync(temp,{recursive:true,force:true});}
+});
+
+test('runtime hash comparison names changed, unrecorded and removed files',()=>{
+  assert.deepEqual(staleHashes({'a.qml':'1','gone.js':'2','same.js':'3'},{'a.qml':'9','new.qml':'4','same.js':'3'}),
+    ['changed: a.qml','removed: gone.js','unrecorded: new.qml']);
+  assert.deepEqual(staleHashes(undefined,{}),[]);
 });

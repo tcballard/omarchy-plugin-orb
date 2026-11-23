@@ -53,14 +53,14 @@
   ],
   "screenshots": [
     {
-      "file": "docs/catalog-settings.png",
+      "file": "docs/history/catalog-settings.png",
       "sha256": "de710cc5a2f917ee6b42e30482a6fb7407683bb4b03c23f54b7372ef2aeb951d",
       "width": 793,
       "height": 636,
       "capture": "Native grim region capture inside owned omadev slot 4; no image composition."
     },
     {
-      "file": "docs/catalog-browser.png",
+      "file": "docs/history/catalog-browser.png",
       "sha256": "24a41b423b51d0e80d352d51a184be6c34484aaef41b2e3dcaeaf1794521a994",
       "width": 793,
       "height": 636,
