@@ -7,7 +7,6 @@ import Quickshell.Wayland
 import qs.Commons as Commons
 import qs.Ui
 import "Model.js" as Model
-import "BindingLifecycle.js" as BindingLifecycle
 import "Gesture.js" as Gesture
 import "TouchModel.js" as TouchModel
 
@@ -120,39 +119,31 @@ Item {
     property string settingsSaveText: ""
     property string settingsError: ""
     property string shortcut: "SUPER + ALT + O"
-    readonly property string bindingOwner: String(Date.now()) + "-" + String(Math.floor(Math.random() * 1000000000)).padStart(9, "0")
-    property string bindingSignature: ""
-    property string setupError: ""
-    property bool setupPending: false
-    property bool setupReady: false
+    readonly property string bindingOwner: bindings.owner
     readonly property bool hubActive: gesture ? gestureCentre : keyboardMode ? selected === -2 : wheelMouse.atCentre
     readonly property string pluginId: "io.github.tcballard.orb"
     readonly property string configPath: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/omarchy/orb.json"
 
-    function requestSetup() {
-        setupPending = true;
-        setupDelay.restart();
-    }
     function animationDuration(milliseconds) {
         if (!config.animation) return 0;
         // Omarchy 4.0.6 predates Style.duration; newer shells also honour the
         // desktop's reduced-motion setting through this function.
         return typeof Commons.Style.duration === "function" ? Commons.Style.duration(milliseconds) : milliseconds;
     }
-    function updateBindings(document) {
-        var signature = JSON.stringify(Model.bindingSignature(document));
-        if (signature === bindingSignature) return;
-        bindingSignature = signature;
-        requestSetup();
+    BindingSetup {
+        id: bindings
+        helper: root.helper("setup")
+        onSucceeded: userConfig.reload()
+        onFailed: {
+            // Even a conflicting shortcut leaves a reachable in-app error/retry.
+            if (root.shell) root.shell.summon(root.pluginId, "{}");
+            root.activateHub();
+        }
     }
-    Component.onCompleted: requestSetup()
-    // The host deletes the checkout after disabling it. Cleanup must be independent
-    // of its files, and owner-scoped so an old unload cannot remove new bindings.
-    Component.onDestruction: Quickshell.execDetached(["hyprctl", "eval", BindingLifecycle.cleanup(bindingOwner)])
     Connections {
         target: Hyprland
         function onRawEvent(event) {
-            if (event.name === "configreloaded") root.requestSetup();
+            if (event.name === "configreloaded") bindings.request();
             else if (event.name === "custom") root.gestureEvent(event.data);
         }
     }
@@ -160,32 +151,6 @@ Item {
         id: gestureWatchdog
         interval: 6500
         onTriggered: if (root.gesture) root.dismiss()
-    }
-    Timer {
-        id: setupDelay
-        interval: 100
-        onTriggered: {
-            if (nativeSetup.running) return;
-            root.setupPending = false;
-            nativeSetup.running = true;
-        }
-    }
-    Process {
-        id: nativeSetup
-        command: ["bash", root.helper("setup"), root.bindingOwner]
-        stdout: StdioCollector {}
-        stderr: StdioCollector { id: setupStderr }
-        onExited: (exitCode, exitStatus) => {
-            root.setupReady = exitCode === 0;
-            root.setupError = exitCode === 0 ? "" : (setupStderr.text.trim().slice(0, 350) || "Orb setup failed. Retry in Orb settings.");
-            if (exitCode === 0) userConfig.reload();
-            else {
-                // Even a conflicting shortcut leaves a reachable in-app error/retry.
-                if (root.shell) root.shell.summon(root.pluginId, "{}");
-                root.activateHub();
-            }
-            if (root.setupPending) setupDelay.restart();
-        }
     }
 
     function open(payloadJson) {
@@ -395,7 +360,7 @@ Item {
         if (!settingsSaving) return;
         settingsSaving = false; saveWatchdog.stop();
         config = Model.parse(settingsSaveText, config).config;
-        shortcut = config.shortcut; updateBindings(config);
+        shortcut = config.shortcut; bindings.update(config);
         if (opened && settingsOpen) cancelSettings();
     }
     function launchAction(command, label) {
@@ -418,7 +383,7 @@ Item {
             settingsOpen: settingsOpen, settingsSaving: settingsSaving, settingsError: settingsError,
             version: settingsCard.version, undoCount: settingsCard.shortcutHistory.length,
             draftActionOrigins: settingsCard.actionOrigins, draftChildOrigins: settingsCard.childOrigins,
-            setupReady: setupReady, setupError: setupError,
+            setupReady: bindings.ready, setupError: bindings.error,
             settingsX: settingsCard.x, settingsY: settingsCard.y, settingsWidth: settingsCard.width, settingsHeight: settingsCard.height,
             shape: root.config.shape, draftShape: settingsCard.shape,
             draftDiameter: settingsCard.diameter, draftAnimation: settingsCard.animation,
@@ -465,7 +430,7 @@ Item {
             if (!parsed.error) {
                 var current = JSON.parse(text());
                 root.shortcut = parsed.config.shortcut;
-                root.updateBindings(current);
+                bindings.update(current);
             }
             if (root.settingsReloadPending) {
                 root.settingsReloadPending = false;
@@ -826,14 +791,14 @@ Item {
             y: Math.round(availableArea.y + (availableArea.height - height) / 2)
             appLibrary: root.appLibrary
             busy: root.settingsSaving
-            error: root.settingsError || root.setupError || touchBackend.error
-            setupFailed: root.setupError !== ""
+            error: root.settingsError || bindings.error || touchBackend.error
+            setupFailed: bindings.error !== ""
             touchFriendly: root.touchSession
             touchStatus: touchBackend.capabilities
             keyboardShown: touchBackend.keyboardSpace
             onKeyboardRequested: touchBackend.keyboard(true)
             onKeyboardToggled: touchBackend.keyboard(!touchBackend.keyboardSpace)
-            onRetrySetup: root.requestSetup()
+            onRetrySetup: bindings.request()
             onSaveRequested: root.saveSettings()
             onCanceled: root.cancelSettings()
         }
