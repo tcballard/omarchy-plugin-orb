@@ -37,7 +37,8 @@ while IFS='|' read -r executable label tool; do
     if [[ ${1:-} == --resolve ]]; then printf '%s\n' "$binary"; exit 0; fi
     icon=agents
     case "$executable" in claude|codex|grok) icon=$executable ;; esac
-    rows+=("$(jq -cn --arg label "$label" --arg icon "$icon" --arg helper "$script_dir/agent" --arg id "$executable" '{label:$label,icon:$icon,command:["omarchy","launch","tui","--app-id=org.omarchy.agent",$helper,$id]}')")
+    rows+=("$(jq -cn --arg label "$label" --arg icon "$icon" --arg helper "$script_dir/agent" --arg id "$executable" \
+      '{label:$label,icon:$icon,command:["omarchy","launch","tui","--app-id=org.omarchy.agent",$helper,$id]}')")
   fi
 done <<'CATALOG'
 claude|Claude Code|claude

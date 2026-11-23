@@ -27,34 +27,55 @@ Item {
     readonly property var touchReserved: {
         var monitors = Hyprland.monitors.values;
         for (var i = 0; i < monitors.length; i++)
-            if (touchScreen && monitors[i].name === touchScreen.name) return monitors[i].lastIpcObject.reserved || [0,0,0,0];
-        return [0,0,0,0];
+            if (touchScreen && monitors[i].name === touchScreen.name)
+                return monitors[i].lastIpcObject.reserved || [0, 0, 0, 0];
+        return [0, 0, 0, 0];
     }
-    onTouchEnabledChanged: if (!touchEnabled && touchSession && config.inputMode === "auto") dismiss()
+    onTouchEnabledChanged: if (!touchEnabled && touchSession && config.inputMode === "auto")
+                               dismiss()
     // Every bundled helper path goes through here so escaped characters decode.
-    function helper(name) { return Model.localPath(Qt.resolvedUrl("scripts/" + name)); }
+    function helper(name) {
+        return Model.localPath(Qt.resolvedUrl("scripts/" + name));
+    }
     readonly property string touchHelper: helper("touch")
     function search() {
-        launchAction(["bash",touchHelper,"search"],"Search");
+        launchAction(["bash", touchHelper, "search"], "Search");
     }
     function openTouch(output) {
-        if (shell) shell.summon(pluginId, JSON.stringify({ touch: true, output: output || "" }));
+        if (shell)
+            shell.summon(pluginId, JSON.stringify({
+                                                      touch: true,
+                                                      output: output || ""
+                                                  }));
     }
     function saveTouchPosition(value) {
-        if (settingsSaving) { edgeHandle.livePosition = config.touchPosition; return; }
+        if (settingsSaving) {
+            edgeHandle.livePosition = config.touchPosition;
+            return;
+        }
         saveOriginal = JSON.parse(JSON.stringify(config));
-        saveDraft = Object.assign({}, saveOriginal, { touchPosition: value });
-        settingsError = ""; settingsSaving = true; saveWatchdog.restart(); reloadForSave();
+        saveDraft = Object.assign({}, saveOriginal, {
+                                      touchPosition: value
+                                  });
+        settingsError = "";
+        settingsSaving = true;
+        saveWatchdog.restart();
+        reloadForSave();
     }
     function editTouchSlot(index) {
-        submenuTitle = ""; agentMenu = false;
+        submenuTitle = "";
+        agentMenu = false;
         activateHub();
-        if (index >= 0) settingsCard.editSlot(index);
+        if (index >= 0)
+            settingsCard.editSlot(index);
     }
     function launchDesktop(entry) {
-        if (!entry || !/^[A-Za-z0-9_.@+-]{1,255}$/.test(String(entry.id || ""))) return;
-        lastAction = appLibrary.entryName(entry); dismiss();
-        pendingDesktopId = String(entry.id); launchDelay.start();
+        if (!entry || !/^[A-Za-z0-9_.@+-]{1,255}$/.test(String(entry.id || "")))
+            return;
+        lastAction = appLibrary.entryName(entry);
+        dismiss();
+        pendingDesktopId = String(entry.id);
+        launchDelay.start();
     }
     TouchBackend {
         id: touchBackend
@@ -63,7 +84,8 @@ Item {
         viewOpen: root.opened && (root.touchSession || root.settingsOpen)
         keyboardProvider: root.config.touchKeyboard || "auto"
         onCompleted: (kind, success) => {
-            if (success && root.touchDismissAfter && kind !== "keyboard") root.dismiss();
+            if (success && root.touchDismissAfter && kind !== "keyboard")
+                root.dismiss();
             root.touchDismissAfter = false;
         }
     }
@@ -81,7 +103,10 @@ Item {
     Connections {
         target: Quickshell
         function onScreensChanged() {
-            if (root.touchSession && root.opened && !Quickshell.screens.some(function(s) { return s.name === root.touchScreenName; })) root.dismiss();
+            if (root.touchSession && root.opened && !Quickshell.screens.some(function (s) {
+                return s.name === root.touchScreenName;
+            }))
+                root.dismiss();
         }
     }
     property var gesture: null
@@ -89,7 +114,12 @@ Item {
     property int selected: -1
     property bool keyboardMode: false
     property point pointer: Qt.point(0, 0)
-    property var config: ({ actions: [], diameter: 240, animation: true, shape: "circle" })
+    property var config: ({
+                              actions: [],
+                              diameter: 240,
+                              animation: true,
+                              shape: "circle"
+                          })
     property string submenuTitle: ""
     property bool agentMenu: false
     property var submenuRows: []
@@ -122,10 +152,12 @@ Item {
     readonly property string bindingOwner: bindings.owner
     readonly property bool hubActive: gesture ? gestureCentre : keyboardMode ? selected === -2 : wheelMouse.atCentre
     readonly property string pluginId: "io.github.tcballard.orb"
-    readonly property string configPath: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config") + "/omarchy/orb.json"
+    readonly property string configPath: (Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config")
+                                         + "/omarchy/orb.json"
 
     function animationDuration(milliseconds) {
-        if (!config.animation) return 0;
+        if (!config.animation)
+            return 0;
         // Omarchy 4.0.6 predates Style.duration; newer shells also honour the
         // desktop's reduced-motion setting through this function.
         return typeof Commons.Style.duration === "function" ? Commons.Style.duration(milliseconds) : milliseconds;
@@ -136,83 +168,136 @@ Item {
         onSucceeded: userConfig.reload()
         onFailed: {
             // Even a conflicting shortcut leaves a reachable in-app error/retry.
-            if (root.shell) root.shell.summon(root.pluginId, "{}");
+            if (root.shell)
+                root.shell.summon(root.pluginId, "{}");
             root.activateHub();
         }
     }
     Connections {
         target: Hyprland
         function onRawEvent(event) {
-            if (event.name === "configreloaded") bindings.request();
-            else if (event.name === "custom") root.gestureEvent(event.data);
+            if (event.name === "configreloaded")
+                bindings.request();
+            else if (event.name === "custom")
+                root.gestureEvent(event.data);
         }
     }
     Timer {
         id: gestureWatchdog
         interval: 6500
-        onTriggered: if (root.gesture) root.dismiss()
+        onTriggered: if (root.gesture)
+                         root.dismiss()
     }
 
     function open(payloadJson) {
         // Payloads deliberately cannot change commands or configuration paths.
         var payload = {};
-        try { if (String(payloadJson || "").length <= 4096) payload = JSON.parse(payloadJson || "{}"); } catch (error) {}
-        if (!payload || typeof payload !== "object" || Array.isArray(payload)) payload = {};
+        try {
+            if (String(payloadJson || "").length <= 4096)
+                payload = JSON.parse(payloadJson || "{}");
+        } catch (error) {}
+        if (!payload || typeof payload !== "object" || Array.isArray(payload))
+            payload = {};
         touchSession = !gesture && (payload.touch === true || (payload.desktop !== true && touchEnabled));
-        var target = typeof payload.output === "string" && payload.output ? TouchModel.output(payload.output, Quickshell.screens) : touchScreen;
+        var target = typeof payload.output === "string" && payload.output ? TouchModel.output(payload.output,
+                                                                                              Quickshell.screens) :
+                                                                            touchScreen;
         var chooseTouchScreen = touchSession && !target;
-        if (chooseTouchScreen) touchSession = false;
+        if (chooseTouchScreen)
+            touchSession = false;
         touchScreenName = touchSession && target ? target.name : "";
         touchHome.reset();
-        touchBackend.error = ""; touchDismissAfter = false;
-        launchDelay.stop(); pendingCommand = []; pendingDesktopId = "";
-        if (settingsReloadPending) settingsSaving = false;
-        settingsOpen = false; settingsReloadPending = false;
-        selected = -1; keyboardMode = false; positioned = false;
-        submenuTitle = ""; agentMenu = false; parentSelection = -1;
-        installedAgents = []; agentError = ""; menuPage = 0;
+        touchBackend.error = "";
+        touchDismissAfter = false;
+        launchDelay.stop();
+        pendingCommand = [];
+        pendingDesktopId = "";
+        if (settingsReloadPending)
+            settingsSaving = false;
+        settingsOpen = false;
+        settingsReloadPending = false;
+        selected = -1;
+        keyboardMode = false;
+        positioned = false;
+        submenuTitle = "";
+        agentMenu = false;
+        parentSelection = -1;
+        installedAgents = [];
+        agentError = "";
+        menuPage = 0;
         moveGate.reset();
         if (gesture) {
-            pointer = Qt.point(gesture.x, gesture.y); positioned = true;
+            pointer = Qt.point(gesture.x, gesture.y);
+            positioned = true;
             cursor.running = false;
         }
         opened = true;
-        if (!gesture && !touchSession) { cursor.running = false; cursor.running = true; }
-        if (touchSession) positioned = true;
-        Qt.callLater(function() {
-            if (!root.opened) return;
+        if (!gesture && !touchSession) {
+            cursor.running = false;
+            cursor.running = true;
+        }
+        if (touchSession)
+            positioned = true;
+        Qt.callLater(function () {
+            if (!root.opened)
+                return;
             if (chooseTouchScreen) {
-                root.activateHub(); settingsCard.selectTab(3);
+                root.activateHub();
+                settingsCard.selectTab(3);
                 root.settingsError = "Choose a connected touch display, then Save.";
-            } else if (root.touchSession) touchHome.forceActiveFocus();
-            else keys.forceActiveFocus();
+            } else if (root.touchSession)
+                touchHome.forceActiveFocus();
+            else
+                keys.forceActiveFocus();
         });
     }
     function close() {
-        opened = false; positioned = false; selected = -1; touchDismissAfter = false;
-        gesture = null; gestureCentre = false; gestureWatchdog.stop();
-        if (settingsReloadPending) settingsSaving = false;
-        settingsOpen = false; settingsReloadPending = false;
-        cursor.running = false; launchDelay.stop(); pendingCommand = []; pendingDesktopId = "";
-        agents.running = false; submenuTitle = ""; agentMenu = false;
+        opened = false;
+        positioned = false;
+        selected = -1;
+        touchDismissAfter = false;
+        gesture = null;
+        gestureCentre = false;
+        gestureWatchdog.stop();
+        if (settingsReloadPending)
+            settingsSaving = false;
+        settingsOpen = false;
+        settingsReloadPending = false;
+        cursor.running = false;
+        launchDelay.stop();
+        pendingCommand = [];
+        pendingDesktopId = "";
+        agents.running = false;
+        submenuTitle = "";
+        agentMenu = false;
     }
     function dismiss() {
         close();
-        if (shell && typeof shell.hide === "function") shell.hide(pluginId);
+        if (shell && typeof shell.hide === "function")
+            shell.hide(pluginId);
     }
     function gestureEvent(data) {
         var event = Gesture.parse(data, bindingOwner);
-        if (!event || !config.mouseOpen) return;
+        if (!event || !config.mouseOpen)
+            return;
         if (event.type === "press") {
-            if (opened) { dismiss(); return; }
-            if (gesture) return;
+            if (opened) {
+                dismiss();
+                return;
+            }
+            if (gesture)
+                return;
             gesture = Gesture.begin(event);
-            gestureCentre = true; gestureWatchdog.restart();
+            gestureCentre = true;
+            gestureWatchdog.restart();
             if (!shell || typeof shell.summon !== "function" || shell.summon(pluginId, "{}") === false) {
-                gesture = null; gestureCentre = false; gestureWatchdog.stop();
+                gesture = null;
+                gestureCentre = false;
+                gestureWatchdog.stop();
             }
         } else if (event.type === "cancel") {
-            if (gesture) dismiss();
+            if (gesture)
+                dismiss();
         } else if (gesture) {
             gesture = Gesture.update(gesture, event);
             updateGestureSelection();
@@ -220,44 +305,74 @@ Item {
         }
     }
     function gesturePoint() {
-        if (!gesture || !panel.contentReady || !positioned || !panel.targetMonitor) return null;
+        if (!gesture || !panel.contentReady || !positioned || !panel.targetMonitor)
+            return null;
         var data = panel.monitorData;
         return wheel.mapFromItem(panel.contentItem, gesture.currentX - (data.x || 0), gesture.currentY - (data.y || 0));
     }
     function updateGestureSelection() {
         var p = gesturePoint();
-        if (!p || !gesture) return;
+        if (!p || !gesture)
+            return;
         keyboardMode = false;
-        gestureCentre = !gesture.moved || Math.hypot(p.x - wheel.width / 2, p.y - wheel.height / 2) < wheel.width * 0.18;
+        gestureCentre = !gesture.moved || Math.hypot(p.x - wheel.width / 2, p.y - wheel.height / 2) < wheel.width
+                * 0.18;
         selected = gesture.moved ? Model.hit(p.x, p.y, wheel.width, selectionCount, config.shape) : -1;
     }
     function finishGesture() {
-        if (!gesture || !gesture.released || !opened || !panel.contentRevealed) return;
+        if (!gesture || !gesture.released || !opened || !panel.contentRevealed)
+            return;
         updateGestureSelection();
         var outcome = Gesture.outcome(gesture), index = selected;
-        gesture = null; gestureCentre = false; gestureWatchdog.stop(); moveGate.reset();
-        if (outcome === "tap") { selected = -1; return; }
-        if (outcome !== "select" || index < 0 || index >= selectionCount) { dismiss(); return; }
+        gesture = null;
+        gestureCentre = false;
+        gestureWatchdog.stop();
+        moveGate.reset();
+        if (outcome === "tap") {
+            selected = -1;
+            return;
+        }
+        if (outcome !== "select" || index < 0 || index >= selectionCount) {
+            dismiss();
+            return;
+        }
         activate(index);
     }
     function select(delta) {
-        if (!selectionCount) return;
-        keyboardMode = true; moveGate.reset();
-        selected = selected < 0 ? (delta > 0 ? 0 : selectionCount - 1) : (selected + delta + selectionCount) % selectionCount;
+        if (!selectionCount)
+            return;
+        keyboardMode = true;
+        moveGate.reset();
+        selected = selected < 0 ? (delta > 0 ? 0 : selectionCount - 1) : (selected + delta + selectionCount)
+                                  % selectionCount;
     }
     function turnPage(delta) {
-        if (pageCount < 2) return;
+        if (pageCount < 2)
+            return;
         menuPage = (menuPage + delta + pageCount) % pageCount;
-        selected = -1; keyboardMode = true; moveGate.reset();
+        selected = -1;
+        keyboardMode = true;
+        moveGate.reset();
     }
     function back() {
-        if (!submenuTitle) { dismiss(); return; }
-        agents.running = false; submenuTitle = ""; agentMenu = false;
-        selected = parentSelection; keyboardMode = true; moveGate.reset();
+        if (!submenuTitle) {
+            dismiss();
+            return;
+        }
+        agents.running = false;
+        submenuTitle = "";
+        agentMenu = false;
+        selected = parentSelection;
+        keyboardMode = true;
+        moveGate.reset();
     }
     function activate(index) {
-        if (opened && index === -2) { activateHub(); return; }
-        if (!opened || index < 0 || index >= selectionCount) return;
+        if (opened && index === -2) {
+            activateHub();
+            return;
+        }
+        if (!opened || index < 0 || index >= selectionCount)
+            return;
         var action = wheelActions[index];
         // DEFERRED(wheels-setups): inert placeholder; see docs/WHEELS.md.
         if (action.menu === "setups") {
@@ -265,26 +380,39 @@ Item {
             return;
         }
         if (action.menu || action.children) {
-            parentSelection = index; submenuTitle = action.label;
+            parentSelection = index;
+            submenuTitle = action.label;
             agentMenu = action.menu === "agents";
             submenuRows = action.menu === "files" ? Model.fileActions(root.helper("files")) : action.children || [];
-            selected = -1; menuPage = 0; moveGate.reset();
-            if (agentMenu) { agentError = ""; installedAgents = []; agents.running = true; }
+            selected = -1;
+            menuPage = 0;
+            moveGate.reset();
+            if (agentMenu) {
+                agentError = "";
+                installedAgents = [];
+                agents.running = true;
+            }
             return;
         }
         if (action.desktopId) {
-            if (!appLibrary) return;
-            lastAction = action.label; dismiss();
-            pendingDesktopId = action.desktopId; launchDelay.start();
-        } else launchAction(action.command.slice(), action.label);
+            if (!appLibrary)
+                return;
+            lastAction = action.label;
+            dismiss();
+            pendingDesktopId = action.desktopId;
+            launchDelay.start();
+        } else
+            launchAction(action.command.slice(), action.label);
     }
     function appIconSource(action) {
         var revision = appRevision;
-        if (!action.desktopId || !appLibrary) return "";
+        if (!action.desktopId || !appLibrary)
+            return "";
         var rows = appLibrary.sortedEntries("");
         for (var i = 0; i < rows.length; i++) {
             var entry = rows[i].entry;
-            if (entry && String(entry.id) === action.desktopId) return appLibrary.iconSource(String(entry.icon || ""));
+            if (entry && String(entry.id) === action.desktopId)
+                return appLibrary.iconSource(String(entry.icon || ""));
         }
         return "";
     }
@@ -292,58 +420,118 @@ Item {
         var choices = [];
         var builtins = Model.parse(defaults.text(), config).config.actions;
         builtins = builtins.concat(builtins[4].children || []);
-        builtins.splice(4, 0, { label: "Postcard", icon: "postcard", command: ["omarchy-shell", "shell", "summon", "tahayvr.postcard", "{}"] });
-        builtins.push({label:"Search",icon:"search",command:["omarchy-shell","oma-cast","show"]});
-        builtins.push({ label: "Make something cool", icon: "create", children: [
-            { label: "New theme", icon: "themes", command: ["omarchy", "agent", "prompt", "Make me a new Omarchy theme. Ask me what look or inspiration I have in mind, then build it following the Omarchy skill's theming guide and switch to it."] },
-            { label: "New plugin", icon: "plugins", command: ["omarchy", "agent", "prompt", "Make me a new Omarchy shell plugin. Ask me what I'd like it to do, then build it following the Omarchy skill's plugin guide and enable it."] },
-            { label: "New app", icon: "app", command: ["omarchy", "agent", "prompt", "Make me a new app for my Omarchy desktop. Ask me what it should do, then build it following the omarchy-app skill and install it so it shows up in the app launcher."] }
-        ] });
-        builtins.forEach(function(action) {
-            choices.push({ title: action.label, detail: action.menu || action.children ? "Circular submenu" : action.icon === "postcard" ? "Postcard plugin · open editor" : "Omarchy shortcut", action: action });
+        builtins.splice(4, 0, {
+                            label: "Postcard",
+                            icon: "postcard",
+                            command: ["omarchy-shell", "shell", "summon", "tahayvr.postcard", "{}"]
+                        });
+        builtins.push({
+                          label: "Search",
+                          icon: "search",
+                          command: ["omarchy-shell", "oma-cast", "show"]
+                      });
+        builtins.push({
+                          label: "Make something cool",
+                          icon: "create",
+                          children: [
+                              {
+                                  label: "New theme",
+                                  icon: "themes",
+                                  command: ["omarchy", "agent", "prompt",
+                                      "Make me a new Omarchy theme. Ask me what look or inspiration I have in mind, then build it following the Omarchy skill's theming guide and switch to it."]
+                              },
+                              {
+                                  label: "New plugin",
+                                  icon: "plugins",
+                                  command: ["omarchy", "agent", "prompt",
+                                      "Make me a new Omarchy shell plugin. Ask me what I'd like it to do, then build it following the Omarchy skill's plugin guide and enable it."]
+                              },
+                              {
+                                  label: "New app",
+                                  icon: "app",
+                                  command: ["omarchy", "agent", "prompt",
+                                      "Make me a new app for my Omarchy desktop. Ask me what it should do, then build it following the omarchy-app skill and install it so it shows up in the app launcher."]
+                              }
+                          ]
+                      });
+        builtins.forEach(function (action) {
+            choices.push({
+                             title: action.label,
+                             detail: action.menu || action.children ? "Circular submenu" : action.icon === "postcard"
+                                                                      ? "Postcard plugin · open editor" :
+                                                                        "Omarchy shortcut",
+                             action: action
+                         });
         });
         if (appLibrary) {
             var rows = appLibrary.sortedEntries("");
-            rows.forEach(function(row) {
+            rows.forEach(function (row) {
                 var entry = row.entry;
-                if (!entry || !/^[A-Za-z0-9_.@+-]{1,255}$/.test(String(entry.id || ""))) return;
+                if (!entry || !/^[A-Za-z0-9_.@+-]{1,255}$/.test(String(entry.id || "")))
+                    return;
                 var title = appLibrary.entryName(entry);
-                if (!title) return;
-                choices.push({ title: title, detail: "App · " + (appLibrary.entrySubtext(entry) || entry.id),
-                    iconSource: appLibrary.iconSource(String(entry.icon || "")),
-                    action: { label: title.slice(0, 20), icon: "app", desktopId: String(entry.id) } });
+                if (!title)
+                    return;
+                choices.push({
+                                 title: title,
+                                 detail: "App · " + (appLibrary.entrySubtext(entry) || entry.id),
+                                 iconSource: appLibrary.iconSource(String(entry.icon || "")),
+                                 action: {
+                                     label: title.slice(0, 20),
+                                     icon: "app",
+                                     desktopId: String(entry.id)
+                                 }
+                             });
             });
         }
         return choices;
     }
     function activateHub() {
-        if (!opened) return;
-        if (submenuTitle) back();
+        if (!opened)
+            return;
+        if (submenuTitle)
+            back();
         else {
             settingsError = "";
             settingsCard.begin(config, settingsChoices());
             settingsOpen = true;
-            Qt.callLater(function() { settingsCard.forceActiveFocus(); });
+            Qt.callLater(function () {
+                settingsCard.forceActiveFocus();
+            });
         }
     }
     function cancelSettings() {
-        if (settingsReloadPending) settingsSaving = false;
-        settingsOpen = false; settingsReloadPending = false;
-        selected = -2; keyboardMode = true; moveGate.reset();
-        if (touchSession) touchHome.forceActiveFocus(); else keys.forceActiveFocus();
+        if (settingsReloadPending)
+            settingsSaving = false;
+        settingsOpen = false;
+        settingsReloadPending = false;
+        selected = -2;
+        keyboardMode = true;
+        moveGate.reset();
+        if (touchSession)
+            touchHome.forceActiveFocus();
+        else
+            keys.forceActiveFocus();
     }
     function saveSettings() {
-        if (settingsSaving) return;
+        if (settingsSaving)
+            return;
         settingsError = "";
         saveOriginal = settingsCard.original;
         saveDraft = settingsCard.draft();
         var checked = Model.parse(JSON.stringify(saveDraft), null);
-        if (checked.error) { settingsError = checked.error; return; }
-        settingsSaving = true; saveWatchdog.restart();
-        if (checked.config.shortcut !== settingsCard.original.shortcut || checked.config.desktopRightClick !== settingsCard.original.desktopRightClick
-            || checked.config.mouseOpen !== settingsCard.original.mouseOpen || checked.config.mouseButton !== settingsCard.original.mouseButton)
+        if (checked.error) {
+            settingsError = checked.error;
+            return;
+        }
+        settingsSaving = true;
+        saveWatchdog.restart();
+        if (checked.config.shortcut !== settingsCard.original.shortcut || checked.config.desktopRightClick
+                !== settingsCard.original.desktopRightClick || checked.config.mouseOpen
+                !== settingsCard.original.mouseOpen || checked.config.mouseButton !== settingsCard.original.mouseButton)
             bindingCheck.running = true;
-        else reloadForSave();
+        else
+            reloadForSave();
     }
     function reloadForSave() {
         settingsReloadPending = true;
@@ -351,66 +539,139 @@ Item {
         userConfig.reload();
     }
     function failSettingsSave(message) {
-        settingsSaving = false; settingsReloadPending = false; saveWatchdog.stop(); settingsError = message;
+        settingsSaving = false;
+        settingsReloadPending = false;
+        saveWatchdog.stop();
+        settingsError = message;
         if (!settingsOpen) {
             edgeHandle.livePosition = config.touchPosition === undefined ? 0.7 : config.touchPosition;
             Quickshell.execDetached(["notify-send", "Orb", message]);
         }
     }
     function finishSettingsSave() {
-        if (!settingsSaving) return;
-        settingsSaving = false; saveWatchdog.stop();
+        if (!settingsSaving)
+            return;
+        settingsSaving = false;
+        saveWatchdog.stop();
         config = Model.parse(settingsSaveText, config).config;
-        shortcut = config.shortcut; bindings.update(config);
-        if (opened && settingsOpen) cancelSettings();
+        shortcut = config.shortcut;
+        bindings.update(config);
+        if (opened && settingsOpen)
+            cancelSettings();
     }
     function launchAction(command, label) {
         lastAction = label;
         dismiss();
         // Let the compositor unmap the exclusive layer before a new UI or screenshot.
-        pendingCommand = command; launchDelay.start();
+        pendingCommand = command;
+        launchDelay.start();
     }
     function status() {
-        return JSON.stringify({ opened: opened, positioned: positioned, selected: selected,
-            inputMode: config.inputMode, touchEnabled: touchEnabled, touchSession: touchSession,
-            touchScreen: touchScreenName, touchPage: touchHome.page,
-            touchReady: touchPanel.contentReady, touchError: touchBackend.error,
-            touchCapabilities: touchBackend.capabilities, keyboardSpace: touchBackend.keyboardSpace,
-            keyboard: keyboardMode, x: wheel.x, y: wheel.y, diameter: wheel.width,
-            iconsOnly: true, selectionCaption: hint.text,
-            desktopSearch: {x: wheel.x + desktopSearch.mapToItem(wheel,0,0).x, y: wheel.y + desktopSearch.mapToItem(wheel,0,0).y, width: desktopSearch.width, height: desktopSearch.height},
-            captionFontSize: hint.font.pixelSize, footerHeight: panel.placement.footer,
-            hubActive: hubActive,
-            settingsOpen: settingsOpen, settingsSaving: settingsSaving, settingsError: settingsError,
-            version: settingsCard.version, undoCount: settingsCard.shortcutHistory.length,
-            draftActionOrigins: settingsCard.actionOrigins, draftChildOrigins: settingsCard.childOrigins,
-            setupReady: bindings.ready, setupError: bindings.error,
-            settingsX: settingsCard.x, settingsY: settingsCard.y, settingsWidth: settingsCard.width, settingsHeight: settingsCard.height,
-            shape: root.config.shape, draftShape: settingsCard.shape,
-            draftDiameter: settingsCard.diameter, draftAnimation: settingsCard.animation,
-            draftShortcut: settingsCard.shortcut, draftDesktopRightClick: settingsCard.desktopRightClick,
-            draftMouseOpen: settingsCard.mouseOpen, draftMouseButton: settingsCard.mouseCheck.value,
-            gestureActive: !!gesture, gestureReleased: gesture ? gesture.released : false,
-            preview: settingsCard.previewStatus(), selectedSlot: settingsCard.selectedSlot,
-            settingsLayout: settingsCard.layoutStatus(),
-            settingsControls: root.settingsOpen ? settingsCard.controls() : [],
-            editorMode: settingsCard.editor.mode, editingChild: settingsCard.editor.editingChild,
-            editorError: settingsCard.editor.error,
-            editorLabel: settingsCard.editor.actionLabel, editorProgram: settingsCard.editor.program,
-            editorIcon: settingsCard.editor.actionIcon, editorDepth: settingsCard.editor.depth,
-            editorArguments: settingsCard.editor.commandArguments, editorChildren: settingsCard.editor.submenuActions,
-            draftActions: settingsCard.actions, settingsTab: settingsCard.tab, editingSlot: settingsCard.editingSlot,
-            pickerItems: settingsCard.pickerTitles(), browsingActions: settingsCard.browsingActions,
-            appLibraryFallback: applicationLibrary.fallback, catalogAppCount: settingsCard.choices.filter(function(c) { return !!c.action.desktopId; }).length,
-            screen: panel.targetScreen ? panel.targetScreen.name : "", error: configError,
-            foreground: String(Commons.Color.menu.text), background: String(Commons.Color.menu.background),
-            lastAction: lastAction, lastDispatch: lastDispatch, pendingDesktopId: pendingDesktopId, launchPending: launchDelay.running,
-            ready: panel.contentReady, revealed: panel.contentRevealed,
-            opacity: wheel.opacity, visible: wheel.visible, windowWidth: panel.width, windowHeight: panel.height,
-            scale: panel.devicePixelRatio, monitorScale: panel.targetMonitor ? panel.targetMonitor.scale : 0,
-            submenu: submenuTitle, items: menuRows.map(function(a) { return a.label; }), loading: agents.running,
-            menuX: wheel.x, menuY: wheel.y, menuWidth: wheel.width, menuHeight: wheel.height,
-            page: menuPage, pages: pageCount, visibleItems: wheelActions.map(function(a) { return a.label; }), agentError: agentError });
+        return JSON.stringify({
+                                  opened: opened,
+                                  positioned: positioned,
+                                  selected: selected,
+                                  inputMode: config.inputMode,
+                                  touchEnabled: touchEnabled,
+                                  touchSession: touchSession,
+                                  touchScreen: touchScreenName,
+                                  touchPage: touchHome.page,
+                                  touchReady: touchPanel.contentReady,
+                                  touchError: touchBackend.error,
+                                  touchCapabilities: touchBackend.capabilities,
+                                  keyboardSpace: touchBackend.keyboardSpace,
+                                  keyboard: keyboardMode,
+                                  x: wheel.x,
+                                  y: wheel.y,
+                                  diameter: wheel.width,
+                                  iconsOnly: true,
+                                  selectionCaption: hint.text,
+                                  desktopSearch: {
+                                      x: wheel.x + desktopSearch.mapToItem(wheel, 0, 0).x,
+                                      y: wheel.y + desktopSearch.mapToItem(wheel, 0, 0).y,
+                                      width: desktopSearch.width,
+                                      height: desktopSearch.height
+                                  },
+                                  captionFontSize: hint.font.pixelSize,
+                                  footerHeight: panel.placement.footer,
+                                  hubActive: hubActive,
+                                  settingsOpen: settingsOpen,
+                                  settingsSaving: settingsSaving,
+                                  settingsError: settingsError,
+                                  version: settingsCard.version,
+                                  undoCount: settingsCard.shortcutHistory.length,
+                                  draftActionOrigins: settingsCard.actionOrigins,
+                                  draftChildOrigins: settingsCard.childOrigins,
+                                  setupReady: bindings.ready,
+                                  setupError: bindings.error,
+                                  settingsX: settingsCard.x,
+                                  settingsY: settingsCard.y,
+                                  settingsWidth: settingsCard.width,
+                                  settingsHeight: settingsCard.height,
+                                  shape: root.config.shape,
+                                  draftShape: settingsCard.shape,
+                                  draftDiameter: settingsCard.diameter,
+                                  draftAnimation: settingsCard.animation,
+                                  draftShortcut: settingsCard.shortcut,
+                                  draftDesktopRightClick: settingsCard.desktopRightClick,
+                                  draftMouseOpen: settingsCard.mouseOpen,
+                                  draftMouseButton: settingsCard.mouseCheck.value,
+                                  gestureActive: !!gesture,
+                                  gestureReleased: gesture ? gesture.released : false,
+                                  preview: settingsCard.previewStatus(),
+                                  selectedSlot: settingsCard.selectedSlot,
+                                  settingsLayout: settingsCard.layoutStatus(),
+                                  settingsControls: root.settingsOpen ? settingsCard.controls() : [],
+                                  editorMode: settingsCard.editor.mode,
+                                  editingChild: settingsCard.editor.editingChild,
+                                  editorError: settingsCard.editor.error,
+                                  editorLabel: settingsCard.editor.actionLabel,
+                                  editorProgram: settingsCard.editor.program,
+                                  editorIcon: settingsCard.editor.actionIcon,
+                                  editorDepth: settingsCard.editor.depth,
+                                  editorArguments: settingsCard.editor.commandArguments,
+                                  editorChildren: settingsCard.editor.submenuActions,
+                                  draftActions: settingsCard.actions,
+                                  settingsTab: settingsCard.tab,
+                                  editingSlot: settingsCard.editingSlot,
+                                  pickerItems: settingsCard.pickerTitles(),
+                                  browsingActions: settingsCard.browsingActions,
+                                  appLibraryFallback: applicationLibrary.fallback,
+                                  catalogAppCount: settingsCard.choices.filter(function (c) {
+                                      return !!c.action.desktopId;
+                                  }).length,
+                                  screen: panel.targetScreen ? panel.targetScreen.name : "",
+                                  error: configError,
+                                  foreground: String(Commons.Color.menu.text),
+                                  background: String(Commons.Color.menu.background),
+                                  lastAction: lastAction,
+                                  lastDispatch: lastDispatch,
+                                  pendingDesktopId: pendingDesktopId,
+                                  launchPending: launchDelay.running,
+                                  ready: panel.contentReady,
+                                  revealed: panel.contentRevealed,
+                                  opacity: wheel.opacity,
+                                  visible: wheel.visible,
+                                  windowWidth: panel.width,
+                                  windowHeight: panel.height,
+                                  scale: panel.devicePixelRatio,
+                                  monitorScale: panel.targetMonitor ? panel.targetMonitor.scale : 0,
+                                  submenu: submenuTitle,
+                                  items: menuRows.map(function (a) {
+                                      return a.label;
+                                  }),
+                                  loading: agents.running,
+                                  menuX: wheel.x,
+                                  menuY: wheel.y,
+                                  menuWidth: wheel.width,
+                                  menuHeight: wheel.height,
+                                  page: menuPage,
+                                  pages: pageCount,
+                                  visibleItems: wheelActions.map(function (a) {
+                                      return a.label;
+                                  }),
+                                  agentError: agentError
+                              });
     }
     FileView {
         id: defaults
@@ -427,7 +688,8 @@ Item {
         onFileChanged: reload()
         onLoaded: {
             var parsed = Model.parse(text(), root.config);
-            root.config = parsed.config; root.configError = parsed.error;
+            root.config = parsed.config;
+            root.configError = parsed.error;
             if (!parsed.error) {
                 var current = JSON.parse(text());
                 root.shortcut = parsed.config.shortcut;
@@ -442,12 +704,17 @@ Item {
                 var document = JSON.parse(text());
                 var merged = Model.mergeSettings(document, root.saveOriginal, root.saveDraft);
                 if (merged.error) {
-                    root.failSettingsSave(merged.error); return;
+                    root.failSettingsSave(merged.error);
+                    return;
                 }
                 root.settingsSaveText = JSON.stringify(merged.document, null, 2) + "\n";
                 // FileView skips identical text without emitting saved().
-                if (root.settingsSaveText === text()) root.finishSettingsSave();
-                else Qt.callLater(function() { userConfig.setText(root.settingsSaveText); });
+                if (root.settingsSaveText === text())
+                    root.finishSettingsSave();
+                else
+                    Qt.callLater(function () {
+                        userConfig.setText(root.settingsSaveText);
+                    });
             }
         }
         onLoadFailed: {
@@ -458,27 +725,36 @@ Item {
         atomicWrites: true
         onSaved: root.finishSettingsSave()
         onSaveFailed: {
-            if (root.settingsSaving) root.failSettingsSave("Could not save. Your changes are still here.");
+            if (root.settingsSaving)
+                root.failSettingsSave("Could not save. Your changes are still here.");
         }
     }
     Timer {
         id: saveWatchdog
         interval: 5000
-        onTriggered: if (root.settingsSaving) root.failSettingsSave("Could not save. Your changes are still here.")
+        onTriggered: if (root.settingsSaving)
+                         root.failSettingsSave("Could not save. Your changes are still here.")
     }
     Process {
         id: bindingCheck
         command: ["hyprctl", "binds", "-j"]
-        stdout: StdioCollector { id: existingBindings }
+        stdout: StdioCollector {
+            id: existingBindings
+        }
         onExited: (code, status) => {
-            if (!root.settingsSaving) return;
+            if (!root.settingsSaving)
+                return;
             var error = "Could not check existing shortcuts. Try saving again.";
-            if (code === 0) try {
-                var opening = settingsCard.draft();
-                error = Model.bindingConflict(JSON.parse(existingBindings.text), opening.shortcut, opening.desktopRightClick, opening.mouseOpen, opening.mouseButton);
-            } catch (failure) {}
-            if (error) root.failSettingsSave(error);
-            else root.reloadForSave();
+            if (code === 0)
+                try {
+                    var opening = settingsCard.draft();
+                    error = Model.bindingConflict(JSON.parse(existingBindings.text), opening.shortcut,
+                                                  opening.desktopRightClick, opening.mouseOpen, opening.mouseButton);
+                } catch (failure) {}
+            if (error)
+                root.failSettingsSave(error);
+            else
+                root.reloadForSave();
         }
     }
     Process {
@@ -486,10 +762,12 @@ Item {
         command: ["hyprctl", "-j", "cursorpos"]
         stdout: StdioCollector {
             onStreamFinished: {
-                if (!root.opened) return;
+                if (!root.opened)
+                    return;
                 try {
                     var p = JSON.parse(text);
-                    if (!isFinite(p.x) || !isFinite(p.y)) throw new Error("Invalid pointer");
+                    if (!isFinite(p.x) || !isFinite(p.y))
+                        throw new Error("Invalid pointer");
                     root.pointer = Qt.point(p.x, p.y);
                 } catch (error) {
                     var s = panel.targetScreen;
@@ -511,9 +789,11 @@ Item {
         interval: 120
         onTriggered: {
             if (root.pendingDesktopId) {
-                var desktopId = root.pendingDesktopId; root.pendingDesktopId = "";
+                var desktopId = root.pendingDesktopId;
+                root.pendingDesktopId = "";
                 root.lastDispatch = "app:" + desktopId;
-                if (root.appLibrary) root.appLibrary.launch(desktopId, root.lastAction);
+                if (root.appLibrary)
+                    root.appLibrary.launch(desktopId, root.lastAction);
                 return;
             }
             var args = [root.helper("launch"), root.lastAction].concat(root.pendingCommand);
@@ -526,17 +806,23 @@ Item {
         target: root.appLibrary
         function onAppsChanged() {
             root.appRevision++;
-            if (root.settingsOpen) settingsCard.choices = root.settingsChoices();
+            if (root.settingsOpen)
+                settingsCard.choices = root.settingsChoices();
             touchHome.refreshApps();
         }
     }
     Connections {
         target: panel
-        function onContentReadyChanged() { if (panel.contentReady) root.updateGestureSelection(); }
+        function onContentReadyChanged() {
+            if (panel.contentReady)
+                root.updateGestureSelection();
+        }
         function onContentRevealedChanged() {
             if (panel.contentRevealed) {
-                root.updateGestureSelection(); root.finishGesture();
-                if (root.settingsOpen) Qt.callLater(touchBackend.raiseKeyboard);
+                root.updateGestureSelection();
+                root.finishGesture();
+                if (root.settingsOpen)
+                    Qt.callLater(touchBackend.raiseKeyboard);
             }
         }
     }
@@ -545,23 +831,35 @@ Item {
         command: [root.helper("agents")]
         stdout: StdioCollector {
             onStreamFinished: {
-                if (!root.opened || !root.agentMenu) return;
+                if (!root.opened || !root.agentMenu)
+                    return;
                 try {
                     var rows = JSON.parse(text);
-                    if (!Array.isArray(rows) || rows.length > 24) throw new Error("Invalid catalog");
-                    var checked = rows.map(function(a) { return Model.action(a, 1); });
-                    if (checked.some(function(a) { return !a; })) throw new Error("Invalid action");
+                    if (!Array.isArray(rows) || rows.length > 24)
+                        throw new Error("Invalid catalog");
+                    var checked = rows.map(function (a) {
+                        return Model.action(a, 1);
+                    });
+                    if (checked.some(function (a) {
+                        return !a;
+                    }))
+                        throw new Error("Invalid action");
                     root.installedAgents = checked;
-                } catch (error) { root.agentError = "Could not read installed agents"; }
+                } catch (error) {
+                    root.agentError = "Could not read installed agents";
+                }
             }
         }
         onExited: (code, status) => {
-            if (root.opened && root.agentMenu && code !== 0) root.agentError = "Could not read installed agents";
+            if (root.opened && root.agentMenu && code !== 0)
+                root.agentError = "Could not read installed agents";
         }
     }
     IpcHandler {
         target: root.pluginId
-        function status(): string { return root.status(); }
+        function status(): string {
+            return root.status();
+        }
     }
     OrbOverlay {
         id: touchPanel
@@ -570,13 +868,18 @@ Item {
         respectReserved: true
         shownKeyboardFocus: WlrKeyboardFocus.OnDemand
         WlrLayershell.namespace: "omarchy-orb-touch"
-        onContentRevealedChanged: if (contentRevealed) Qt.callLater(touchBackend.raiseKeyboard)
+        onContentRevealedChanged: if (contentRevealed)
+                                      Qt.callLater(touchBackend.raiseKeyboard)
         TouchHome {
             id: touchHome
-            x: Math.max(8, (parent.width - width) / 2); y: 8
+            x: Math.max(8, (parent.width - width) / 2)
+            y: 8
             width: Math.min(900, Math.max(1, parent.width - 16))
-            height: Math.max(1, parent.height - 16 - (touchBackend.keyboardSpace ? Math.min(330, parent.height * 0.42) : 0))
-            controller: root; backend: touchBackend; screenName: root.touchScreenName
+            height: Math.max(1, parent.height - 16 - (touchBackend.keyboardSpace ? Math.min(330, parent.height * 0.42) :
+                                                                                   0))
+            controller: root
+            backend: touchBackend
+            screenName: root.touchScreenName
             onDismissed: root.dismiss()
             onSettingsRequested: slot => root.editTouchSlot(slot)
         }
@@ -591,9 +894,9 @@ Item {
         shownKeyboardFocus: root.settingsOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.Exclusive
         WlrLayershell.namespace: "omarchy-plugin-orb"
         readonly property var monitorData: targetMonitor ? targetMonitor.lastIpcObject : ({})
-        readonly property var placement: Model.placement(
-            root.pointer.x - (monitorData.x || 0), root.pointer.y - (monitorData.y || 0),
-            width, height, monitorData.reserved || [0,0,0,0], Commons.Style.space(root.config.diameter))
+        readonly property var placement: Model.placement(root.pointer.x - (monitorData.x || 0), root.pointer.y - (
+                                                             monitorData.y || 0), width, height, monitorData.reserved
+                                                         || [0, 0, 0, 0], Commons.Style.space(root.config.diameter))
 
         MouseArea {
             anchors.fill: parent
@@ -605,17 +908,35 @@ Item {
             anchors.fill: parent
             focus: root.opened
             Keys.onPressed: event => {
-                if (event.key === Qt.Key_S && !root.submenuTitle) root.search();
-                else if (event.key === Qt.Key_Escape || event.key === Qt.Key_Backspace || (root.submenuTitle && event.key === Qt.Key_Left)) root.back();
-                else if (event.key === Qt.Key_Home) { root.keyboardMode = true; root.selected = -2; moveGate.reset(); }
-                else if (event.key === Qt.Key_PageDown) root.turnPage(1);
-                else if (event.key === Qt.Key_PageUp) root.turnPage(-1);
-                else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) root.activate(root.selected);
-                else if (event.key === Qt.Key_Right || event.key === Qt.Key_Down || (event.key === Qt.Key_Tab && !(event.modifiers & Qt.ShiftModifier))) root.select(1);
-                else if (event.key === Qt.Key_Left || event.key === Qt.Key_Up || event.key === Qt.Key_Backtab || event.key === Qt.Key_Tab) root.select(-1);
+                if (event.key === Qt.Key_S && !root.submenuTitle)
+                    root.search();
+                else if (event.key === Qt.Key_Escape || event.key === Qt.Key_Backspace || (root.submenuTitle
+                                                                                           && event.key
+                                                                                           === Qt.Key_Left))
+                    root.back();
+                else if (event.key === Qt.Key_Home) {
+                    root.keyboardMode = true;
+                    root.selected = -2;
+                    moveGate.reset();
+                } else if (event.key === Qt.Key_PageDown)
+                    root.turnPage(1);
+                else if (event.key === Qt.Key_PageUp)
+                    root.turnPage(-1);
+                else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space)
+                    root.activate(root.selected);
+                else if (event.key === Qt.Key_Right || event.key === Qt.Key_Down || (event.key === Qt.Key_Tab && !(
+                                                                                         event.modifiers
+                                                                                         & Qt.ShiftModifier)))
+                    root.select(1);
+                else if (event.key === Qt.Key_Left || event.key === Qt.Key_Up || event.key === Qt.Key_Backtab || event.key
+                         === Qt.Key_Tab)
+                    root.select(-1);
                 else if (event.key >= Qt.Key_1 && event.key <= Qt.Key_9 && event.key - Qt.Key_1 < root.selectionCount) {
-                    root.keyboardMode = true; moveGate.reset(); root.selected = event.key - Qt.Key_1;
-                } else return;
+                    root.keyboardMode = true;
+                    moveGate.reset();
+                    root.selected = event.key - Qt.Key_1;
+                } else
+                    return;
                 event.accepted = true;
             }
         }
@@ -629,8 +950,17 @@ Item {
             visible: root.positioned && !root.settingsOpen
             opacity: root.opened && root.positioned && panel.contentRevealed ? 1 : 0
             scale: opacity > 0 ? 1 : 0.92
-            Behavior on opacity { NumberAnimation { duration: root.animationDuration(150) } }
-            Behavior on scale { NumberAnimation { duration: root.animationDuration(190); easing.type: Easing.OutCubic } }
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: root.animationDuration(150)
+                }
+            }
+            Behavior on scale {
+                NumberAnimation {
+                    duration: root.animationDuration(190)
+                    easing.type: Easing.OutCubic
+                }
+            }
 
             WheelSurface {
                 id: ring
@@ -648,11 +978,13 @@ Item {
                     readonly property bool chosen: root.selected === index
                     width: wheel.width * (root.selectionCount > 6 ? 0.24 : 0.28)
                     height: Math.max(24, wheel.width * 0.09)
-                    x: wheel.width/2 + Math.cos(angle) * wheel.width * 0.33 - width/2
-                    y: wheel.height/2 + Math.sin(angle) * wheel.width * 0.33 - height/2
+                    x: wheel.width / 2 + Math.cos(angle) * wheel.width * 0.33 - width / 2
+                    y: wheel.height / 2 + Math.sin(angle) * wheel.width * 0.33 - height / 2
                     ActionIcon {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        y: 0; width: parent.height; height: width
+                        y: 0
+                        width: parent.height
+                        height: width
                         name: modelData.icon
                         appSource: root.appIconSource(modelData)
                         selected: parent.chosen
@@ -662,16 +994,28 @@ Item {
             }
             Rectangle {
                 anchors.centerIn: parent
-                width: parent.width * 0.32; height: width; radius: width / 2
+                width: parent.width * 0.32
+                height: width
+                radius: width / 2
                 color: root.hubActive ? Commons.Color.menu.selectedBackground : Commons.Color.menu.background
                 border.width: 1
-                border.color: root.hubActive ? Commons.Color.menu.selectedBorder : Commons.Util.alpha(Commons.Color.menu.text, 0.18)
-                Behavior on color { ColorAnimation { duration: root.animationDuration(140) } }
-                Behavior on border.color { ColorAnimation { duration: root.animationDuration(140) } }
+                border.color: root.hubActive ? Commons.Color.menu.selectedBorder : Commons.Util.alpha(
+                                                   Commons.Color.menu.text, 0.18)
+                Behavior on color {
+                    ColorAnimation {
+                        duration: root.animationDuration(140)
+                    }
+                }
+                Behavior on border.color {
+                    ColorAnimation {
+                        duration: root.animationDuration(140)
+                    }
+                }
                 Image {
                     id: omarchyMark
                     anchors.centerIn: parent
-                    width: parent.width * 0.42; height: width
+                    width: parent.width * 0.42
+                    height: width
                     source: Qt.resolvedUrl("assets/omarchy-logo.svg")
                     sourceSize.width: Math.ceil(width * 2)
                     sourceSize.height: Math.ceil(height * 2)
@@ -692,100 +1036,170 @@ Item {
                     shadowHorizontalOffset: 0
                     shadowVerticalOffset: 0
                     shadowOpacity: root.hubActive ? 0.85 : 0
-                    Behavior on shadowOpacity { NumberAnimation { duration: root.animationDuration(140) } }
+                    Behavior on shadowOpacity {
+                        NumberAnimation {
+                            duration: root.animationDuration(140)
+                        }
+                    }
                 }
                 LineIcon {
                     visible: !!root.submenuTitle
                     anchors.centerIn: parent
-                    width: parent.width * 0.42; height: width
+                    width: parent.width * 0.42
+                    height: width
                     name: "arrow-undo"
                     ink: root.hubActive ? "#ffffff" : Commons.Color.menu.text
                 }
             }
-            PointerMoveGate { id: moveGate; referenceItem: wheel }
+            PointerMoveGate {
+                id: moveGate
+                referenceItem: wheel
+            }
             MouseArea {
                 id: wheelMouse
-                readonly property bool atCentre: containsMouse && Math.hypot(mouseX - width/2, mouseY - height/2) < width * 0.18
+                readonly property bool atCentre: containsMouse && Math.hypot(mouseX - width / 2, mouseY - height / 2)
+                                                 < width * 0.18
                 anchors.fill: parent
                 hoverEnabled: true
                 acceptedButtons: Qt.AllButtons
-                cursorShape: (root.selected >= 0 && !root.keyboardMode) || atCentre ? Qt.PointingHandCursor : Qt.ArrowCursor
+                cursorShape: (root.selected >= 0 && !root.keyboardMode) || atCentre ? Qt.PointingHandCursor :
+                                                                                      Qt.ArrowCursor
                 onPositionChanged: mouse => {
-                    if (root.gesture) return;
-                    if (!moveGate.moved(this, mouse)) return;
+                    if (root.gesture)
+                        return;
+                    if (!moveGate.moved(this, mouse))
+                        return;
                     root.keyboardMode = false;
                     root.selected = Model.hit(mouse.x, mouse.y, width, root.selectionCount, root.config.shape);
                 }
-                onExited: if (!root.gesture && !root.keyboardMode) root.selected = -1
+                onExited: if (!root.gesture && !root.keyboardMode)
+                              root.selected = -1
                 onClicked: mouse => {
                     var i = Model.hit(mouse.x, mouse.y, width, root.selectionCount, root.config.shape);
-                    if (mouse.button === Qt.LeftButton && i >= 0) root.activate(i);
-                    else if (mouse.button === Qt.LeftButton && atCentre) root.activateHub();
-                    else root.dismiss();
+                    if (mouse.button === Qt.LeftButton && i >= 0)
+                        root.activate(i);
+                    else if (mouse.button === Qt.LeftButton && atCentre)
+                        root.activateHub();
+                    else
+                        root.dismiss();
                 }
-                onWheel: event => { root.turnPage(event.angleDelta.y < 0 ? 1 : -1); event.accepted = true; }
+                onWheel: event => {
+                    root.turnPage(event.angleDelta.y < 0 ? 1 : -1);
+                    event.accepted = true;
+                }
             }
             Rectangle {
-                anchors.top: parent.bottom; anchors.topMargin: 8 * wheel.captionScale
+                anchors.top: parent.bottom
+                anchors.topMargin: 8 * wheel.captionScale
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: Math.min(wheel.width, hint.implicitWidth + (root.pageCount > 1 ? 102 : 54) * wheel.captionScale)
-                height: 28 * wheel.captionScale; radius: height / 2
+                height: 28 * wheel.captionScale
+                radius: height / 2
                 color: Commons.Color.menu.background
-                border.width: 1; border.color: Commons.Util.alpha(Commons.Color.menu.text, 0.16)
+                border.width: 1
+                border.color: Commons.Util.alpha(Commons.Color.menu.text, 0.16)
                 Text {
-                    id: hint; anchors.verticalCenter: parent.verticalCenter
+                    id: hint
+                    anchors.verticalCenter: parent.verticalCenter
                     x: (root.pageCount > 1 ? 32 : 10) * wheel.captionScale
                     width: parent.width - (root.pageCount > 1 ? 94 : 50) * wheel.captionScale
-                    horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
-                    text: root.configError ? "Config error · using last valid actions"
-                        : root.gesture && root.selected < 0 ? "Release to cancel · tap to open"
-                        : root.selected >= 0 && root.selected < root.selectionCount ? root.wheelActions[root.selected].label
-                        : !root.submenuTitle && root.hubActive ? "Orb settings · click to open"
-                        : root.submenuTitle && root.hubActive ? "Back to main wheel"
-                        : root.submenuTitle && !root.selectionCount ? (agents.running ? "Finding installed agents…" : root.agentError || "No supported agents installed")
-                        : root.pageCount > 1 ? "Page " + (root.menuPage + 1) + " / " + root.pageCount
-                        : root.submenuTitle ? "Centre to go back · Enter to launch" : "Select · click or Enter"
+                    horizontalAlignment: Text.AlignHCenter
+                    elide: Text.ElideRight
+                    text: root.configError ? "Config error · using last valid actions" : root.gesture && root.selected
+                                             < 0 ? "Release to cancel · tap to open" : root.selected >= 0
+                                                   && root.selected < root.selectionCount
+                                                   ? root.wheelActions[root.selected].label : !root.submenuTitle
+                                                     && root.hubActive ? "Orb settings · click to open" :
+                                                                         root.submenuTitle && root.hubActive
+                                                                         ? "Back to main wheel" : root.submenuTitle &&
+                                                                           !root.selectionCount ? (agents.running
+                                                                                                   ? "Finding installed agents…" :
+                                                                                                     root.agentError
+                                                                                                     || "No supported agents installed") :
+                                                                                                  root.pageCount > 1
+                                                                                                  ? "Page " + (
+                                                                                                        root.menuPage
+                                                                                                        + 1) + " / "
+                                                                                                    + root.pageCount :
+                                                                                                    root.submenuTitle
+                                                                                                    ? "Centre to go back · Enter to launch" :
+                                                                                                      "Select · click or Enter"
                     textFormat: Text.PlainText
-                    font.family: Commons.Style.font.menuFamily; font.pixelSize: Math.round(11 * wheel.captionScale)
-                    color: root.configError ? Commons.Color.urgent : root.selected >= 0 ? Commons.Color.menu.text : Commons.Util.alpha(Commons.Color.menu.text, 0.7)
+                    font.family: Commons.Style.font.menuFamily
+                    font.pixelSize: Math.round(11 * wheel.captionScale)
+                    color: root.configError ? Commons.Color.urgent : root.selected >= 0 ? Commons.Color.menu.text :
+                                                                                          Commons.Util.alpha(
+                                                                                              Commons.Color.menu.text,
+                                                                                              0.7)
                 }
                 Button {
                     id: desktopSearch
                     objectName: "orb-desktop-search"
                     anchors.right: parent.right
-                    width: 30 * wheel.captionScale; height: parent.height; radius: height / 2
+                    width: 30 * wheel.captionScale
+                    height: parent.height
+                    radius: height / 2
                     focusable: true
                     Accessible.role: Accessible.Button
                     Accessible.name: "Search with Oma-Cast"
                     Accessible.onPressAction: clicked()
                     onClicked: root.search()
-                    LineIcon { anchors.centerIn: parent; width: 14 * wheel.captionScale; height: width; name: "search"; ink: Commons.Color.menu.text }
+                    LineIcon {
+                        anchors.centerIn: parent
+                        width: 14 * wheel.captionScale
+                        height: width
+                        name: "search"
+                        ink: Commons.Color.menu.text
+                    }
                 }
                 Repeater {
                     model: root.pageCount > 1 ? 2 : 0
                     delegate: Item {
                         required property int index
                         x: index === 0 ? 0 : parent.width - width - desktopSearch.width
-                        width: 32 * wheel.captionScale; height: parent.height
-                        Text { anchors.centerIn: parent; text: index === 0 ? "‹" : "›"; font.pixelSize: Math.round(22 * wheel.captionScale); color: Commons.Color.menu.text }
-                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.turnPage(index === 0 ? -1 : 1) }
+                        width: 32 * wheel.captionScale
+                        height: parent.height
+                        Text {
+                            anchors.centerIn: parent
+                            text: index === 0 ? "‹" : "›"
+                            font.pixelSize: Math.round(22 * wheel.captionScale)
+                            color: Commons.Color.menu.text
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.turnPage(index === 0 ? -1 : 1)
+                        }
                     }
                 }
             }
         }
         EditorLabel {
             visible: root.opened && !root.settingsOpen && !root.touchSession && touchBackend.error !== ""
-            x: 12; y: (panel.monitorData.reserved || [0,0,0,0])[1] + 66; width: Math.min(500,panel.width-24)
-            text: touchBackend.error; wrapMode: Text.WordWrap; z: 2
+            x: 12
+            y: (panel.monitorData.reserved || [0, 0, 0, 0])[1] + 66
+            width: Math.min(500, panel.width - 24)
+            text: touchBackend.error
+            wrapMode: Text.WordWrap
+            z: 2
         }
         SettingsPanel {
             id: settingsCard
             version: root.manifest ? String(root.manifest.version || "") : ""
             visible: root.opened && root.positioned && root.settingsOpen
-            readonly property var reserved: panel.respectReserved ? [0, 0, 0, 0] : panel.monitorData.reserved || [0, 0, 0, 0]
-            readonly property rect availableArea: Qt.rect(reserved[0] + 12, reserved[1] + 12,
-                Math.max(1, panel.width - reserved[0] - reserved[2] - 24),
-                Math.max(1, panel.height - reserved[1] - reserved[3] - 24 - (touchBackend.keyboardSpace ? Math.min(330, panel.height * 0.42) : 0)))
+            readonly property var reserved: panel.respectReserved ? [0, 0, 0, 0] : panel.monitorData.reserved || [0, 0,
+                                                                                                                  0, 0]
+            readonly property rect availableArea: Qt.rect(reserved[0] + 12, reserved[1] + 12, Math.max(1, panel.width
+                                                                                                       - reserved[0]
+                                                                                                       - reserved[2]
+                                                                                                       - 24), Math.max(1,
+                                                                                                                       panel.height
+                                                                                                                       - reserved[1]
+                                                                                                                       - reserved[3]
+                                                                                                                       - 24 - (touchBackend.keyboardSpace
+                                                                                                                               ? Math.min(
+                                                                                                                                     330, panel.height
+                                                                                                                                     * 0.42) : 0)))
             width: Math.min(Commons.Style.space(680), availableArea.width)
             maximumHeight: availableArea.height
             x: Math.round(availableArea.x + (availableArea.width - width) / 2)

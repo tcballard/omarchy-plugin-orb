@@ -6,7 +6,7 @@ Portable checks (Node 22+, Bash, jq, Lua 5.4 or texlua; no npm dependencies):
 ./tests/run
 ```
 
-This retains the starter identity/CI checks and adds geometry/config tests. On Omarchy, `./tests/native` also runs the installed manifest validator and Qt's QML parser. Parsing is not runtime verification.
+This retains the starter identity/CI checks and adds geometry/config tests. On Omarchy, `./tests/native` also runs the installed manifest validator and Qt's QML parser, and requires every QML file to match `qmlformat` with the repository's `.qmlformat.ini` (fix with `/usr/lib/qt6/bin/qmlformat -i *.qml`). `scripts/check.mjs` rejects source lines over 160 columns other than plain string literals. Parsing is not runtime verification.
 
 For v0.4.0, CI also runs Qt Quick Test with a real Qt event loop and explicit
 theme/UI stubs. It exercises mouse and synthetic touch sequences, grid fallback,

@@ -10,13 +10,14 @@ Item {
     id: setup
     required property string helper
     // Unique per menu instance; stale instances cannot remove newer bindings.
-    readonly property string owner: String(Date.now()) + "-" + String(Math.floor(Math.random() * 1000000000)).padStart(9, "0")
+    readonly property string owner: String(Date.now()) + "-" + String(Math.floor(Math.random() * 1000000000)).padStart(9,
+                                                                                                                       "0")
     property string signature: ""
     property string error: ""
     property bool pending: false
     property bool ready: false
-    signal succeeded()
-    signal failed()
+    signal succeeded
+    signal failed
 
     function request() {
         pending = true;
@@ -25,7 +26,8 @@ Item {
     // Re-register only when the binding-relevant settings change.
     function update(document) {
         var next = JSON.stringify(Model.bindingSignature(document));
-        if (next === signature) return;
+        if (next === signature)
+            return;
         signature = next;
         request();
     }
@@ -39,7 +41,8 @@ Item {
         id: delay
         interval: 100
         onTriggered: {
-            if (process.running) return;
+            if (process.running)
+                return;
             setup.pending = false;
             process.running = true;
         }
@@ -48,13 +51,19 @@ Item {
         id: process
         command: ["bash", setup.helper, setup.owner]
         stdout: StdioCollector {}
-        stderr: StdioCollector { id: stderr }
+        stderr: StdioCollector {
+            id: stderr
+        }
         onExited: (exitCode, exitStatus) => {
             setup.ready = exitCode === 0;
-            setup.error = exitCode === 0 ? "" : (stderr.text.trim().slice(0, 350) || "Orb setup failed. Retry in Orb settings.");
-            if (exitCode === 0) setup.succeeded();
-            else setup.failed();
-            if (setup.pending) delay.restart();
+            setup.error = exitCode === 0 ? "" : (stderr.text.trim().slice(0, 350)
+                                                 || "Orb setup failed. Retry in Orb settings.");
+            if (exitCode === 0)
+                setup.succeeded();
+            else
+                setup.failed();
+            if (setup.pending)
+                delay.restart();
         }
     }
 }

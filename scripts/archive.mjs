@@ -24,7 +24,11 @@ try {
     && a.release_authorization?.input_commit===a.input_commit
     && a.release_authorization?.actor && a.release_authorization?.statement
     && Array.isArray(a.pending) && a.pending.length>0;
-  if((a.status!=='passed'&&!authorizedPending)||!a.platform||!a.date||!Array.isArray(a.commands)||!a.commands.length||!Array.isArray(a.results)||!a.results.length||!/^[a-f0-9]{40}$/.test(a.input_commit||''))throw Error('Record actual acceptance evidence before release');
+  const recorded=a.platform && a.date
+    && Array.isArray(a.commands) && a.commands.length
+    && Array.isArray(a.results) && a.results.length
+    && /^[a-f0-9]{40}$/.test(a.input_commit||'');
+  if((a.status!=='passed'&&!authorizedPending)||!recorded)throw Error('Record actual acceptance evidence before release');
   // Evidence may be recorded in a later docs-only commit, never after a runtime change.
   git('merge-base','--is-ancestor',a.input_commit,'HEAD');
   const changed=git('diff','--name-only',a.input_commit,'HEAD').split('\n').filter(Boolean);

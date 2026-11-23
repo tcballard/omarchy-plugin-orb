@@ -11,5 +11,6 @@ Button {
     implicitHeight: Math.max(48, Commons.Style.space(48))
     Accessible.role: Accessible.Button
     Accessible.name: text
-    Accessible.onPressAction: if (enabled) clicked()
+    Accessible.onPressAction: if (enabled)
+                                  clicked()
 }

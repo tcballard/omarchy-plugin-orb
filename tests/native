@@ -4,7 +4,8 @@ cd -- "$(dirname -- "$0")/.."
 ./tests/run
 lua tests/desktop-click.lua
 omarchy plugin validate .
+# Uses .qmlformat.ini. Run `qmlformat -i *.qml` to fix a reported file.
 for file in *.qml; do
-  /usr/lib/qt6/bin/qmlformat -n "$file" >/dev/null
+  /usr/lib/qt6/bin/qmlformat "$file" | cmp -s - "$file" || { echo "Not qmlformat-clean: $file" >&2; exit 1; }
 done
-echo 'PASS: installed manifest validator and Qt QML parser'
+echo 'PASS: installed manifest validator, Qt QML parser and qmlformat layout'

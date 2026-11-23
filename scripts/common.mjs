@@ -19,7 +19,8 @@ export function validate(c) {
   if (!/^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/.test(c.owner)) throw Error('Invalid GitHub owner');
   if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,99}$/.test(c.repo) || c.repo.endsWith('.git') || c.repo.includes('..')) throw Error('Invalid repository name');
   if (!/^[a-z][a-z0-9-]{0,59}$/.test(c.slug)) throw Error('Use a lowercase slug starting with a letter');
-  if (!/^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9_-]*){2,}$/.test(c.id) || c.id.startsWith('omarchy.')) throw Error('Use a lowercase reverse-domain ID outside omarchy.*');
+  if (!/^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9_-]*){2,}$/.test(c.id) || c.id.startsWith('omarchy.'))
+    throw Error('Use a lowercase reverse-domain ID outside omarchy.*');
   for (const k of ['name','author','description']) {
     if (typeof c[k] !== 'string' || !c[k].trim() || /[\x00-\x1f\x7f]/.test(c[k]) || c[k].length > 240) throw Error(`Invalid ${k}`);
   }

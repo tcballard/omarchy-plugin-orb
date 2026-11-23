@@ -179,11 +179,13 @@ function mergeSettings(document, original, draft) {
         if (JSON.stringify(original.actions[i]) === JSON.stringify(draft.actions[i])) continue;
         if (current.config.actions.length !== original.actions.length)
             return { error: "Slots changed elsewhere. Reopen settings to load them." };
-        if (JSON.stringify(current.config.actions[i]) !== JSON.stringify(original.actions[i]) && JSON.stringify(current.config.actions[i]) !== JSON.stringify(draft.actions[i]))
+        var latest = JSON.stringify(current.config.actions[i]);
+        if (latest !== JSON.stringify(original.actions[i]) && latest !== JSON.stringify(draft.actions[i]))
             return { error: "Slot " + (i + 1) + " changed elsewhere. Reopen settings to load it." };
         result.actions[i] = draft.actions[i];
     }
-    var fields = ["diameter", "animation", "shape", "shortcut", "desktopRightClick", "mouseOpen", "mouseButton", "inputMode", "touchEdge", "touchLayout", "touchPosition", "touchScale", "touchOutput", "touchKeyboard", "touchDrag"];
+    var fields = ["diameter", "animation", "shape", "shortcut", "desktopRightClick", "mouseOpen", "mouseButton",
+        "inputMode", "touchEdge", "touchLayout", "touchPosition", "touchScale", "touchOutput", "touchKeyboard", "touchDrag"];
     for (var field = 0; field < fields.length; field++) {
         var name = fields[field];
         if (draft[name] === undefined || original[name] === draft[name]) continue;
@@ -241,9 +243,11 @@ function parse(raw, fallback) {
         return { config: fallback, error: "Choose a circle or polygon wheel." };
     var touch = touchSettings(value);
     if (touch.error) return { config: fallback, error: touch.error };
-    return { config: Object.assign(touch.config, { actions: actions, diameter: Math.max(220, Math.min(600, Number(value.diameter) || 240)), animation: value.animation !== false,
-        shape: value.shape || "circle", shortcut: activation.value, desktopRightClick: value.desktopRightClick === true,
-        mouseOpen: mouseOpen, mouseButton: mouse.value }), error: "" };
+    return { config: Object.assign(touch.config, {
+        actions: actions, diameter: Math.max(220, Math.min(600, Number(value.diameter) || 240)),
+        animation: value.animation !== false, shape: value.shape || "circle", shortcut: activation.value,
+        desktopRightClick: value.desktopRightClick === true, mouseOpen: mouseOpen, mouseButton: mouse.value
+    }), error: "" };
 }
 // Vertices align with actions; sector boundaries meet the middle of each edge.
 // One/two-entry submenu pages retain a circle because no polygon exists there.
@@ -277,5 +281,9 @@ function placement(px, py, width, height, reserved, preferred) {
         x: Math.max(left, Math.min(px - size / 2, left + availableW - size)),
         y: Math.max(top, Math.min(py - size / 2, top + availableH - size - footer)) };
 }
-if (typeof module !== "undefined") module.exports = { parse: parse, localPath: localPath, touchSettings: touchSettings, action: action, icons: icons, validIcon: validIcon, iconUrl: iconUrl, fileActions: fileActions, shortcut: shortcut, mouseButton: mouseButton, bindingSignature: bindingSignature, bindingConflict: bindingConflict, edgeRadius: edgeRadius,
-    move: move, hit: hit, placement: placement, mergeSettings: mergeSettings };
+if (typeof module !== "undefined") module.exports = {
+    parse: parse, localPath: localPath, touchSettings: touchSettings, action: action, icons: icons,
+    validIcon: validIcon, iconUrl: iconUrl, fileActions: fileActions, shortcut: shortcut, mouseButton: mouseButton,
+    bindingSignature: bindingSignature, bindingConflict: bindingConflict, edgeRadius: edgeRadius,
+    move: move, hit: hit, placement: placement, mergeSettings: mergeSettings
+};
