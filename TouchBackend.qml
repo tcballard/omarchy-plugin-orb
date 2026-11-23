@@ -20,7 +20,7 @@ Item {
     property bool actionPending: false
     property string pendingKeyboard: ""
     readonly property bool busy: actionPending
-    readonly property string helper: decodeURIComponent(Qt.resolvedUrl("scripts/touch").toString().replace(/^file:\/\//, ""))
+    required property string helper
     signal completed(string kind, bool success)
 
     function refresh() {

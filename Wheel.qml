@@ -32,7 +32,9 @@ Item {
         return [0,0,0,0];
     }
     onTouchEnabledChanged: if (!touchEnabled && touchSession && config.inputMode === "auto") dismiss()
-    readonly property string touchHelper: decodeURIComponent(Qt.resolvedUrl("scripts/touch").toString().replace(/^file:\/\//,""))
+    // Every bundled helper path goes through here so escaped characters decode.
+    function helper(name) { return Model.localPath(Qt.resolvedUrl("scripts/" + name)); }
+    readonly property string touchHelper: helper("touch")
     function search() {
         launchAction(["bash",touchHelper,"search"],"Search");
     }
@@ -57,6 +59,7 @@ Item {
     }
     TouchBackend {
         id: touchBackend
+        helper: root.touchHelper
         mode: root.config.inputMode || "desktop"
         viewOpen: root.opened && (root.touchSession || root.settingsOpen)
         keyboardProvider: root.config.touchKeyboard || "auto"
@@ -169,7 +172,7 @@ Item {
     }
     Process {
         id: nativeSetup
-        command: ["bash", decodeURIComponent(Qt.resolvedUrl("scripts/setup").toString().replace(/^file:\/\//, "")), root.bindingOwner]
+        command: ["bash", root.helper("setup"), root.bindingOwner]
         stdout: StdioCollector {}
         stderr: StdioCollector { id: setupStderr }
         onExited: (exitCode, exitStatus) => {
@@ -298,7 +301,7 @@ Item {
         if (action.menu || action.children) {
             parentSelection = index; submenuTitle = action.label;
             agentMenu = action.menu === "agents";
-            submenuRows = action.menu === "files" ? Model.fileActions(decodeURIComponent(Qt.resolvedUrl("scripts/files").toString().replace(/^file:\/\//, ""))) : action.children || [];
+            submenuRows = action.menu === "files" ? Model.fileActions(root.helper("files")) : action.children || [];
             selected = -1; menuPage = 0; moveGate.reset();
             if (agentMenu) { agentError = ""; installedAgents = []; agents.running = true; }
             return;
@@ -547,7 +550,7 @@ Item {
                 if (root.appLibrary) root.appLibrary.launch(desktopId, root.lastAction);
                 return;
             }
-            var args = [Qt.resolvedUrl("scripts/launch").toString().replace(/^file:\/\//, ""), root.lastAction].concat(root.pendingCommand);
+            var args = [root.helper("launch"), root.lastAction].concat(root.pendingCommand);
             root.lastDispatch = "command:" + root.lastAction;
             root.pendingCommand = [];
             Quickshell.execDetached(args);
@@ -573,7 +576,7 @@ Item {
     }
     Process {
         id: agents
-        command: [Qt.resolvedUrl("scripts/agents").toString().replace(/^file:\/\//, "")]
+        command: [root.helper("agents")]
         stdout: StdioCollector {
             onStreamFinished: {
                 if (!root.opened || !root.agentMenu) return;
