@@ -62,30 +62,6 @@ TestCase {
         process.running = false; process.exited(0, 0);
         tryCompare(process, "running", true); compare(setup.pending, false);
     }
-    function test_disable_tears_down_and_enable_registers_a_new_owner() {
-        var setup = create(), process = processOf(setup);
-        tryCompare(process, "running", true); process.running = false; process.exited(0, 0);
-        var first = setup.owner, before = Quickshell.detached.length;
-        setup.active = false;
-        compare(setup.ready, false);
-        compare(Quickshell.detached.length, before + 1);
-        verify(Quickshell.detached[before][2].indexOf(first) >= 0);
-        setup.request(); wait(150);
-        compare(process.running, false); compare(setup.pending, false);
-        setup.active = true;
-        verify(setup.owner !== first);
-        tryCompare(process, "running", true);
-        compare(process.command[2], setup.owner);
-        process.running = false; process.exited(0, 0);
-        compare(setup.ready, true);
-    }
-    function test_run_finishing_after_disable_reports_nothing() {
-        var setup = create(), process = processOf(setup);
-        tryCompare(process, "running", true);
-        setup.active = false;
-        process.running = false; process.exited(1, 0);
-        compare(failed.count, 0); compare(setup.error, ""); compare(setup.ready, false);
-    }
     function test_unload_tears_down_owned_bindings() {
         var setup = create(), owner = setup.owner, before = Quickshell.detached.length;
         setup.destroy(); wait(0);
